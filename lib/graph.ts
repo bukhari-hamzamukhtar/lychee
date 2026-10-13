@@ -1,0 +1,263 @@
+/**
+ * LastBuy impact engine.
+ *
+ * Deliberately contains no language model. Propagating a part change through a
+ * multi-level bill of materials is exact arithmetic over a DAG; an LLM asked to
+ * do it will invent quantities. The model's job is reading the notice and
+ * writing the memo. This file's job is deciding what is actually affected, and
+ * showing the path it used so a human can check it.
+ */
+import { NODES, EDGES, SUPPLIERS, CUSTOMERS, CERTIFICATIONS } from "@/data/factory";
+import type { BomNode, ImpactReport, AffectedProduct } from "./types";
+
+const WEEKS_PER_MONTH = 4.333;
+/** How long the company contracts to keep supplying spares. */
+export const SERVICE_HORIZON_WEEKS = 156;
+/** Extra cover bought on top of forecast demand, for scrap and warranty. */
+export const SPARES_BUFFER = 0.1;
+/** Finished-goods price as a multiple of BOM cost. Industry rule of thumb. */
+const PRICE_MULTIPLE = 3;
+
+const byId = new Map<string, BomNode>(NODES.map((n) => [n.id, n]));
+const supplierById = new Map(SUPPLIERS.map((s) => [s.id, s]));
+
+const parentsOf = new Map<string, { id: string; qtyPer: number }[]>();
+const childrenOf = new Map<string, { id: string; qtyPer: number }[]>();
+for (const e of EDGES) {
+  if (!parentsOf.has(e.child)) parentsOf.set(e.child, []);
+  parentsOf.get(e.child)!.push({ id: e.parent, qtyPer: e.qtyPer });
+  if (!childrenOf.has(e.parent)) childrenOf.set(e.parent, []);
+  childrenOf.get(e.parent)!.push({ id: e.child, qtyPer: e.qtyPer });
+}
+
+export function node(id: string): BomNode | undefined {
+  return byId.get(id);
+}
+
+/**
+ * Quantity of `id` consumed per unit of each product that contains it.
+ *
+ * For a product P the answer is trivially { P: 1 }. Otherwise, for every parent
+ * p that consumes q of this node, this node inherits q times whatever p needs
+ * per product — summed over every parent, because a component can reach the
+ * same product through more than one route.
+ */
+const qtyMemo = new Map<string, Record<string, number>>();
+export function qtyPerProduct(id: string): Record<string, number> {
+  const hit = qtyMemo.get(id);
+  if (hit) return hit;
+
+  const n = byId.get(id);
+  if (!n) return {};
+
+  let out: Record<string, number> = {};
+  const parents = parentsOf.get(id) ?? [];
+  if (n.kind === "product" || parents.length === 0) {
+    out = n.kind === "product" ? { [id]: 1 } : {};
+  } else {
+    for (const p of parents) {
+      const up = qtyPerProduct(p.id);
+      for (const [root, qty] of Object.entries(up)) {
+        out[root] = (out[root] ?? 0) + qty * p.qtyPer;
+      }
+    }
+  }
+  qtyMemo.set(id, out);
+  return out;
+}
+
+/** Every route from `id` up to a product, for auditability. */
+export function pathsToProducts(id: string, limitPerRoot = 3): string[][] {
+  const paths: string[][] = [];
+  const walk = (cur: string, acc: string[]) => {
+    if (acc.length > 8) return;
+    const n = byId.get(cur);
+    const parents = parentsOf.get(cur) ?? [];
+    if (n?.kind === "product" || parents.length === 0) {
+      paths.push([...acc, cur]);
+      return;
+    }
+    for (const p of parents) walk(p.id, [...acc, cur]);
+  };
+  walk(id, []);
+
+  const seen = new Map<string, number>();
+  return paths.filter((p) => {
+    const root = p[p.length - 1];
+    const n = (seen.get(root) ?? 0) + 1;
+    seen.set(root, n);
+    return n <= limitPerRoot;
+  });
+}
+
+/** Rolled-up material cost of a node, by walking the BOM downward. */
+const costMemo = new Map<string, number>();
+export function rolledUpCost(id: string): number {
+  const hit = costMemo.get(id);
+  if (hit !== undefined) return hit;
+  const n = byId.get(id);
+  if (!n) return 0;
+  const kids = childrenOf.get(id) ?? [];
+  const cost = kids.length === 0
+    ? n.unitCostEur ?? 0
+    : kids.reduce((sum, k) => sum + k.qtyPer * rolledUpCost(k.id), 0);
+  costMemo.set(id, cost);
+  return cost;
+}
+
+function daysBetween(a: Date, b: Date): number {
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000);
+}
+
+/**
+ * Full downstream impact of a part going end-of-life.
+ * `asOf` is injected rather than read from the clock so results are reproducible.
+ */
+export function impactOf(partId: string, lastBuyDate: string, asOf: Date): ImpactReport | null {
+  const part = byId.get(partId);
+  if (!part) return null;
+
+  const qtyMap = qtyPerProduct(partId);
+  const allPaths = pathsToProducts(partId);
+
+  const affectedProducts: AffectedProduct[] = Object.entries(qtyMap)
+    .map(([productId, qtyPerUnit]) => {
+      const p = byId.get(productId)!;
+      return {
+        productId,
+        productName: p.name,
+        qtyPerUnit,
+        monthlyDemand: p.monthlyDemand ?? 0,
+        paths: allPaths.filter((path) => path[path.length - 1] === productId),
+      };
+    })
+    .sort((a, b) => b.qtyPerUnit * b.monthlyDemand - a.qtyPerUnit * a.monthlyDemand);
+
+  const productIds = new Set(affectedProducts.map((p) => p.productId));
+
+  // Assemblies between the part and the products, in BOM order.
+  const affectedAssemblies = [
+    ...new Set(allPaths.flatMap((p) => p.slice(1, -1))),
+  ].filter((id) => byId.get(id)?.kind === "assembly");
+
+  const affectedCustomers = CUSTOMERS.filter((c) =>
+    c.productIds.some((p) => productIds.has(p)),
+  ).map((c) => ({
+    customerId: c.id,
+    name: c.name,
+    annualUnits: c.annualUnits,
+    productIds: c.productIds.filter((p) => productIds.has(p)),
+  }));
+
+  // A certificate only re-opens if this part is named critical in it.
+  const affectedCertifications = CERTIFICATIONS.filter(
+    (c) => c.criticalPartIds.includes(partId) && c.productIds.some((p) => productIds.has(p)),
+  ).map((c) => ({
+    id: c.id,
+    name: c.name,
+    clause: c.clause,
+    requalWeeks: c.requalWeeks,
+    requalCostEur: c.requalCostEur,
+  }));
+
+  const weeklyConsumption = affectedProducts.reduce(
+    (sum, p) => sum + (p.monthlyDemand / WEEKS_PER_MONTH) * p.qtyPerUnit,
+    0,
+  );
+
+  const stockQty = part.stockQty ?? 0;
+  const runwayWeeks = weeklyConsumption > 0 ? stockQty / weeklyConsumption : Infinity;
+
+  const needed = weeklyConsumption * SERVICE_HORIZON_WEEKS * (1 + SPARES_BUFFER);
+  const lastBuyQty = Math.max(0, Math.ceil(needed - stockQty));
+  const lastBuyCostEur = lastBuyQty * (part.unitCostEur ?? 0);
+
+  const revenueAtRiskEur = affectedProducts.reduce(
+    (sum, p) => sum + (p.monthlyDemand ?? 0) * 12 * rolledUpCost(p.productId) * PRICE_MULTIPLE,
+    0,
+  );
+
+  const daysToLastBuy = daysBetween(asOf, new Date(lastBuyDate));
+
+  // ---- criticality ----
+  // Each term is clamped to 0..1 then weighted, so the score stays explainable.
+  const urgency = clamp01(1 - daysToLastBuy / 365);
+  const reach = clamp01(affectedProducts.length / 4);
+  const coverGap = clamp01(1 - runwayWeeks / Math.max(1, part.leadTimeWeeks ?? 1));
+  const sole = part.altSources === 0 ? 1 : part.altSources === 1 ? 0.5 : 0;
+  const certHit = affectedCertifications.length > 0 ? 1 : 0;
+
+  const criticality = Math.round(
+    100 * (0.3 * urgency + 0.2 * reach + 0.2 * coverGap + 0.15 * sole + 0.15 * certHit),
+  );
+
+  return {
+    partId,
+    partName: part.name,
+    supplierName: supplierById.get(part.supplierId ?? "")?.name ?? "unknown",
+    lastBuyDate,
+    daysToLastBuy,
+    affectedAssemblies,
+    affectedProducts,
+    affectedCustomers,
+    affectedCertifications,
+    stockQty,
+    weeklyConsumption: round1(weeklyConsumption),
+    runwayWeeks: Number.isFinite(runwayWeeks) ? round1(runwayWeeks) : Infinity,
+    lastBuyQty,
+    lastBuyCostEur: Math.round(lastBuyCostEur),
+    revenueAtRiskEur: Math.round(revenueAtRiskEur),
+    criticality,
+    verdict: criticality >= 70 ? "critical" : criticality >= 40 ? "high" : "watch",
+  };
+}
+
+/**
+ * Forward-looking obsolescence risk, from graph structure rather than from any
+ * announcement. Pure features for now; this is the slot a trained graph model
+ * drops into, and the feature vector is already the one it would consume.
+ */
+export function obsolescenceRisk(partId: string) {
+  const part = byId.get(partId);
+  if (!part || part.kind !== "part") return null;
+  const supplier = supplierById.get(part.supplierId ?? "");
+  const fanIn = (parentsOf.get(partId) ?? []).length;
+  const reach = Object.keys(qtyPerProduct(partId)).length;
+
+  const features = {
+    supplierEolRate: supplier?.eolRate ?? 0.05,
+    soleSourced: part.altSources === 0 ? 1 : 0,
+    lowAltSources: clamp01(1 - (part.altSources ?? 0) / 4),
+    longLeadTime: clamp01((part.leadTimeWeeks ?? 0) / 36),
+    nrnd: part.lifecycle === "nrnd" ? 1 : 0,
+    fanIn: clamp01(fanIn / 4),
+    productReach: clamp01(reach / 4),
+  };
+
+  const score = Math.round(
+    100 *
+      clamp01(
+        2.2 * features.supplierEolRate +
+          0.2 * features.soleSourced +
+          0.15 * features.lowAltSources +
+          0.15 * features.longLeadTime +
+          0.25 * features.nrnd +
+          0.1 * features.fanIn +
+          0.1 * features.productReach,
+      ),
+  );
+  return { partId, name: part.name, score, features };
+}
+
+export function allPartsByRisk() {
+  return NODES.filter((n) => n.kind === "part")
+    .map((n) => obsolescenceRisk(n.id)!)
+    .sort((a, b) => b.score - a.score);
+}
+
+function clamp01(x: number) {
+  return Math.max(0, Math.min(1, x));
+}
+function round1(x: number) {
+  return Math.round(x * 10) / 10;
+}
