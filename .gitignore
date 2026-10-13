@@ -10,3 +10,6 @@ build/
 Thumbs.db
 next-env.d.ts
 .vercel
+
+# typescript incremental build cache
+tsconfig.tsbuildinfo
