@@ -256,6 +256,20 @@ export function obsolescenceRisk(partId: string) {
   return { partId, name: part.name, score, features };
 }
 
+/**
+ * Annual revenue of one finished product, at a standard price multiple.
+ *
+ * Exposed separately so callers aggregating across several notices can take the
+ * union of affected products rather than summing each notice's total — two
+ * notices on different parts usually threaten overlapping products, and adding
+ * their totals counts the same revenue twice.
+ */
+export function productAnnualRevenue(productId: string): number {
+  const p = byId.get(productId);
+  if (!p || p.kind !== "product") return 0;
+  return (p.monthlyDemand ?? 0) * 12 * rolledUpCost(productId) * PRICE_MULTIPLE;
+}
+
 export function allPartsByRisk() {
   return NODES.filter((n) => n.kind === "part")
     .map((n) => obsolescenceRisk(n.id)!)

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useWorkspace } from "@/lib/store";
-import { impactOf, allPartsByRisk } from "@/lib/graph";
+import { impactOf, allPartsByRisk, productAnnualRevenue } from "@/lib/graph";
 import { SUPPLIERS } from "@/data/factory";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { Badge, Card, SectionTitle, Stat, SkeletonRows, eur, num, verdictTone } from "@/components/ui";
@@ -31,7 +31,13 @@ export default function NoticesPage() {
   );
 
   const open = rows.filter((r) => r.lead && !approvals.some((a) => a.pcnId === r.pcn.id));
-  const exposed = rows.reduce((s, r) => s + (r.lead?.revenueAtRiskEur ?? 0), 0);
+  // Union, not sum: notices on different parts routinely threaten the same
+  // products, and adding their totals would count that revenue more than once.
+  const exposed = useMemo(() => {
+    const products = new Set<string>();
+    for (const r of rows) for (const p of r.lead?.affectedProducts ?? []) products.add(p.productId);
+    return [...products].reduce((s, id) => s + productAnnualRevenue(id), 0);
+  }, [rows]);
   const soonest = open
     .map((r) => r.lead!.daysToLastBuy)
     .sort((a, b) => a - b)[0];
