@@ -16,7 +16,7 @@ import { impactOf } from "@/lib/graph";
 import { chatGuarded, MODEL } from "@/lib/amd";
 import { runTool, askAgent, agentConfigured } from "@/lib/evolus";
 import { docsMentioning, asContext } from "@/lib/library";
-import type { ImpactReport } from "@/lib/types";
+import type { ImpactReport, Pcn } from "@/lib/types";
 
 export const runtime = "nodejs";
 // Vercel Hobby caps a function at 60s. The pipeline runs in well under that
@@ -36,14 +36,22 @@ interface Stage {
 
 export async function POST(req: Request) {
   let pcnId: string;
+  let supplied: Pcn | undefined;
   try {
-    ({ pcnId } = await req.json());
+    const body = await req.json();
+    pcnId = String(body.pcnId ?? "");
+    supplied = body.pcn as Pcn | undefined;
   } catch {
     return NextResponse.json({ error: "expected JSON body with pcnId" }, { status: 400 });
   }
 
-  const pcn = PCN_INBOX.find((p) => p.id === pcnId);
+  // A seeded notice is looked up; an uploaded one is sent with the request,
+  // because it lives in the caller's workspace and not on the server.
+  const pcn = PCN_INBOX.find((p) => p.id === pcnId) ?? supplied;
   if (!pcn) return NextResponse.json({ error: `unknown notice ${pcnId}` }, { status: 404 });
+  if (!Array.isArray(pcn.partIds) || !pcn.lastBuyDate) {
+    return NextResponse.json({ error: "notice is missing part numbers or a date" }, { status: 400 });
+  }
 
   const supplier = SUPPLIERS.find((s) => s.id === pcn.supplierId);
   const startedAt = Date.now();

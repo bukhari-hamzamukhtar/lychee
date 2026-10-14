@@ -5,7 +5,33 @@
 :root { color-scheme: dark; }
 
 body {
-  background: #0f1115;
-  color: #e6e9ef;
-  font-feature-settings: "tnum" 1;
+  background: #0B1120;
+  color: #E2E8F0;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Staggered entrance for lists, so a long table arrives in order. */
+.stagger > * { animation: fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 35ms; }
+.stagger > *:nth-child(3) { animation-delay: 70ms; }
+.stagger > *:nth-child(4) { animation-delay: 105ms; }
+.stagger > *:nth-child(5) { animation-delay: 140ms; }
+.stagger > *:nth-child(6) { animation-delay: 175ms; }
+.stagger > *:nth-child(n + 7) { animation-delay: 210ms; }
+
+.skeleton {
+  background: linear-gradient(90deg, #1E293B 25%, #263449 50%, #1E293B 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 6px; border: 2px solid #0B1120; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

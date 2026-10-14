@@ -1,120 +1,127 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { PCN_INBOX, SUPPLIERS } from "@/data/factory";
-import { impactOf, allPartsByRisk } from "@/lib/graph";
-import { PcnInbox } from "@/components/PcnInbox";
-import { ImpactPanel } from "@/components/ImpactPanel";
-import { AssessPanel, type AssessResult } from "@/components/AssessPanel";
+import Link from "next/link";
+import { useMemo } from "react";
+import { useWorkspace } from "@/lib/store";
+import { impactOf, allPartsByRisk, productAnnualRevenue } from "@/lib/graph";
+import { SUPPLIERS } from "@/data/factory";
+import { UploadDropzone } from "@/components/UploadDropzone";
+import { Badge, Card, SectionTitle, Stat, SkeletonRows, eur, num, verdictTone } from "@/components/ui";
 
-/** Fixed so the demo and the verification script agree on "days remaining". */
 const ASOF = new Date("2026-10-14T00:00:00Z");
 
-export default function Page() {
-  const [selected, setSelected] = useState(PCN_INBOX[0].id);
-  const [results, setResults] = useState<Record<string, AssessResult>>({});
-  const [running, setRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function NoticesPage() {
+  const { notices, uploaded, approvals, hydrated } = useWorkspace();
 
-  const pcn = PCN_INBOX.find((p) => p.id === selected)!;
-  const supplier = SUPPLIERS.find((s) => s.id === pcn.supplierId);
-
-  // The impact itself needs no network call; it is arithmetic over the graph.
-  const reports = useMemo(
+  const rows = useMemo(
     () =>
-      pcn.partIds
-        .map((id) => impactOf(id, pcn.lastBuyDate, ASOF))
-        .filter((r): r is NonNullable<typeof r> => r !== null),
-    [pcn],
+      notices.map((pcn) => {
+        const reports = pcn.partIds
+          .map((id) => impactOf(id, pcn.lastBuyDate, ASOF))
+          .filter((r): r is NonNullable<typeof r> => r !== null);
+        const lead = reports.sort((a, b) => b.criticality - a.criticality)[0] ?? null;
+        return {
+          pcn,
+          lead,
+          supplier: SUPPLIERS.find((s) => s.id === pcn.supplierId)?.name ?? pcn.supplierId,
+          isUpload: uploaded.some((u) => u.id === pcn.id),
+        };
+      }),
+    [notices, uploaded],
   );
 
-  const risk = useMemo(() => allPartsByRisk().slice(0, 5), []);
-
-  async function assess() {
-    setRunning(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/assess", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pcnId: pcn.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? `request failed (${res.status})`);
-      setResults((r) => ({ ...r, [pcn.id]: data as AssessResult }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "unknown failure");
-    } finally {
-      setRunning(false);
-    }
-  }
+  const open = rows.filter((r) => r.lead && !approvals.some((a) => a.pcnId === r.pcn.id));
+  // Union, not sum: notices on different parts routinely threaten the same
+  // products, and adding their totals would count that revenue more than once.
+  const exposed = useMemo(() => {
+    const products = new Set<string>();
+    for (const r of rows) for (const p of r.lead?.affectedProducts ?? []) products.add(p.productId);
+    return [...products].reduce((s, id) => s + productAnnualRevenue(id), 0);
+  }, [rows]);
+  const soonest = open
+    .map((r) => r.lead!.daysToLastBuy)
+    .sort((a, b) => a - b)[0];
+  const atRisk = useMemo(() => allPartsByRisk().filter((r) => r.score >= 70).length, []);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
-      <aside className="space-y-6">
-        <section>
-          <h1 className="mb-3 text-xs uppercase tracking-wide text-white/40">
-            Supplier notices
-          </h1>
-          <PcnInbox items={PCN_INBOX} selectedId={selected} onSelect={setSelected} />
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-xs uppercase tracking-wide text-white/40">
-            At risk, no notice yet
-          </h2>
-          <ul className="divide-y divide-edge rounded-lg border border-edge text-sm">
-            {risk.map((r) => (
-              <li key={r.partId} className="flex items-center justify-between px-3 py-2">
-                <span className="truncate pr-2 font-mono text-xs">{r.partId}</span>
-                <span
-                  className={
-                    r.score >= 70 ? "text-crit" : r.score >= 45 ? "text-warn" : "text-white/40"
-                  }
-                >
-                  {r.score}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-xs text-white/30">
-            Scored from graph position and supplier history, before any announcement
-            arrives.
-          </p>
-        </section>
-      </aside>
-
-      <div className="space-y-6">
-        <header className="rounded-lg border border-edge px-4 py-3">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="font-mono text-sm">{pcn.id}</h2>
-              <p className="mt-1 text-xs text-white/40">
-                {supplier?.name} &middot; received {pcn.receivedAt} &middot;{" "}
-                {pcn.type === "eol" ? "end of life" : "product change"} &middot; arrived in{" "}
-                {pcn.language.toUpperCase()}
-              </p>
-            </div>
-            <span className="shrink-0 rounded border border-edge px-2 py-1 text-xs text-white/50">
-              last buy {pcn.lastBuyDate}
-            </span>
-          </div>
-          <pre className="mt-3 max-h-32 overflow-y-auto whitespace-pre-wrap border-t border-edge pt-3 text-xs leading-relaxed text-white/45">
-            {pcn.rawText}
-          </pre>
-        </header>
-
-        {reports.map((r) => (
-          <ImpactPanel key={r.partId} report={r} />
-        ))}
-
-        <AssessPanel
-          result={results[pcn.id] ?? null}
-          running={running}
-          error={error}
-          onRun={assess}
-        />
+    <div className="space-y-7">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Supplier notices</h1>
+        <p className="mt-1 text-[13px] text-muted">
+          Every incoming change, with what it does to your products.
+        </p>
       </div>
+
+      <Card>
+        <div className="grid grid-cols-2 divide-x divide-y divide-hair sm:grid-cols-4 sm:divide-y-0">
+          <Stat label="Open notices" value={hydrated ? open.length : "—"} />
+          <Stat
+            label="Soonest deadline"
+            value={hydrated && soonest !== undefined ? `${soonest} days` : "—"}
+            tone={soonest !== undefined && soonest < 60 ? "crit" : undefined}
+          />
+          <Stat label="Revenue exposed" value={hydrated ? eur(exposed) : "—"} sub="per year" />
+          <Stat label="Parts at risk" value={atRisk} sub="before any notice" tone={atRisk > 0 ? "warn" : undefined} />
+        </div>
+      </Card>
+
+      <UploadDropzone />
+
+      <section>
+        <SectionTitle aside={<span className="text-[11px] text-faint">{rows.length} total</span>}>
+          Inbox
+        </SectionTitle>
+
+        {!hydrated ? (
+          <SkeletonRows n={3} />
+        ) : (
+          <div className="stagger space-y-2">
+            {rows.map(({ pcn, lead, supplier, isUpload }) => (
+              <Link key={pcn.id} href={`/notices/${pcn.id}`} className="block">
+                <Card interactive className="px-4 py-3.5">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[13px] text-body">{pcn.id}</span>
+                        <Badge tone="muted">{pcn.language.toUpperCase()}</Badge>
+                        {isUpload && <Badge tone="info">uploaded</Badge>}
+                        {pcn.type === "change" && <Badge tone="muted">change</Badge>}
+                      </div>
+                      <p className="mt-1 truncate text-[12px] text-faint">
+                        {supplier} &middot; {pcn.partIds.join(", ")} &middot; received {pcn.receivedAt}
+                      </p>
+                    </div>
+
+                    {lead ? (
+                      <>
+                        <div className="text-right">
+                          <div className="text-[10px] uppercase tracking-wider text-faint">Last buy</div>
+                          <div
+                            className={`text-sm tabular-nums ${
+                              lead.daysToLastBuy < 60 ? "text-crit" : "text-body"
+                            }`}
+                          >
+                            {lead.daysToLastBuy} days
+                          </div>
+                        </div>
+                        <div className="hidden text-right sm:block">
+                          <div className="text-[10px] uppercase tracking-wider text-faint">Must buy</div>
+                          <div className="text-sm tabular-nums text-body">{eur(lead.lastBuyCostEur)}</div>
+                        </div>
+                        <Badge tone={verdictTone(lead.verdict)}>
+                          {lead.verdict} &middot; {lead.criticality}
+                        </Badge>
+                      </>
+                    ) : (
+                      <Badge tone="muted">no BOM match</Badge>
+                    )}
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
