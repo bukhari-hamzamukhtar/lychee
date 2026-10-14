@@ -41,11 +41,6 @@ export default function Page() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? `request failed (${res.status})`);
-      if (!data.memo?.trim()) {
-        throw new Error(
-          "The model returned no usable memo. The impact figures above are unaffected.",
-        );
-      }
       setResults((r) => ({ ...r, [pcn.id]: data as AssessResult }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "unknown failure");

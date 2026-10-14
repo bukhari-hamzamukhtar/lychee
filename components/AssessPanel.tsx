@@ -22,6 +22,7 @@ export interface AssessResult {
   stages: Stage[];
   totals: { ms: number; evolusCredits: number; amdCostUsd: number };
   model: string;
+  issues?: string[];
 }
 
 /**
@@ -148,18 +149,32 @@ export function AssessPanel({
             </details>
           )}
 
-          <div>
-            <h3 className="mb-2 text-xs uppercase tracking-wide text-white/40">
-              Memo for the procurement lead
-            </h3>
-            <p className="whitespace-pre-wrap rounded border border-edge/70 px-3 py-3 text-sm leading-relaxed">
-              <RichText text={result.memo} />
-            </p>
-            <p className="mt-1.5 text-[11px] text-white/25">
-              Written from figures the engine supplied. The model is not permitted to
-              introduce a number or a date of its own.
-            </p>
-          </div>
+          {result.issues && result.issues.length > 0 && (
+            <div className="rounded border border-warn/40 bg-warn/5 px-3 py-2.5">
+              <p className="text-xs text-warn">
+                {result.issues.join(" · ")}
+              </p>
+              <p className="mt-1 text-[11px] text-white/35">
+                The impact figures above are computed from the bill of materials and do
+                not depend on any model, so they are unaffected.
+              </p>
+            </div>
+          )}
+
+          {result.memo?.trim() && (
+            <div>
+              <h3 className="mb-2 text-xs uppercase tracking-wide text-white/40">
+                Memo for the procurement lead
+              </h3>
+              <p className="whitespace-pre-wrap rounded border border-edge/70 px-3 py-3 text-sm leading-relaxed">
+                <RichText text={result.memo} />
+              </p>
+              <p className="mt-1.5 text-[11px] text-white/25">
+                Written from figures the engine supplied. The model is not permitted to
+                introduce a number or a date of its own.
+              </p>
+            </div>
+          )}
 
           {result.certificationRuling && (
             <div>

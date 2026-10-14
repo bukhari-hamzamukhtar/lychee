@@ -129,7 +129,17 @@ export async function POST(req: Request) {
           { model: MODEL.generate, fallbackModel: MODEL.fallback, maxTokens: 900, temperature: 0.3, topP: 1.0, askedShort: true },
         ),
       (r) => ({ costUsd: r.costUsd }),
-    ),
+    ).catch((e) => ({
+      // The impact figures are computed locally and owe the model nothing, so
+      // an outage upstream costs the memo, not the assessment. AMD's gateway
+      // returned 502 across every endpoint during the event; losing the whole
+      // response to that would be the wrong trade.
+      text: "",
+      costUsd: 0,
+      model: "",
+      attempts: [],
+      error: e instanceof Error ? e.message : "model unavailable",
+    })),
 
     // 5. Drafts. Nothing is addressed or sent until a person approves.
     timed(
@@ -224,6 +234,13 @@ export async function POST(req: Request) {
       stages,
       totals,
       model: memo.model,
+      /** Stages that failed without taking the assessment down with them. */
+      issues: [
+        "error" in memo && memo.error ? `memo unavailable: ${memo.error}` : null,
+        ruling && "error" in ruling && ruling.error
+          ? `certification ruling unavailable: ${ruling.error}`
+          : null,
+      ].filter(Boolean),
       /** Which models were tried, so a degenerate generation is visible not hidden. */
       modelAttempts: memo.attempts,
     });
