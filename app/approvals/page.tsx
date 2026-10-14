@@ -22,11 +22,11 @@ export default function ApprovalsPage() {
   const boardLevel = approvals.filter((a) => a.costEur > 500_000).length;
 
   return (
-    <div className="mx-auto max-w-[1320px] px-8 py-12">
+    <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
       <div className="space-y-7">
       <PageHead
         title="Approvals"
-        meta={hydrated ? `${approvals.length} committed` : undefined}
+        meta={hydrated ? `${approvals.length} committed · what has been ordered, and on whose authority` : undefined}
       />
 
       <Panel>

@@ -45,7 +45,7 @@ export default function PartDetail({ params }: { params: Promise<{ id: string }>
   const certs = CERTIFICATIONS.filter((c) => c.criticalPartIds.includes(partId));
 
   return (
-    <div className="mx-auto max-w-[1320px] px-8 py-12">
+    <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
       <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -101,9 +101,9 @@ export default function PartDetail({ params }: { params: Promise<{ id: string }>
                   <span className="w-60 shrink-0 text-[12px] text-mid">
                     {FEATURE_LABEL[k] ?? k}
                   </span>
-                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-bg-raised">
+                  <div className="h-2 w-56 shrink-0 border-x border-line">
                     <div
-                      className="h-full origin-left animate-grow rounded-full bg-accent"
+                      className="h-2 origin-left animate-grow bg-accent/70"
                       style={{ width: `${Math.round(Math.min(1, v) * 100)}%` }}
                     />
                   </div>
@@ -113,7 +113,8 @@ export default function PartDetail({ params }: { params: Promise<{ id: string }>
                 </div>
               ))}
           </div>
-          <p className="mt-3 text-[11.5px] leading-relaxed text-dim">
+          <p className="mt-4 text-[12.5px] leading-relaxed text-dim">
+            Each factor scores 0 to 1 and is weighted into the total above.{" "}
             Computed from this part&rsquo;s position in the graph and its supplier&rsquo;s history,
             not from any announcement. This is the queue to work through before a notice forces
             the issue.

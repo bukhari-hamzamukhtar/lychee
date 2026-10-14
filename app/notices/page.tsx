@@ -44,11 +44,11 @@ export default function NoticesPage() {
   const atRisk = useMemo(() => allPartsByRisk().filter((r) => r.score >= 70).length, []);
 
   return (
-    <div className="mx-auto max-w-[1320px] px-8 py-12">
+    <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
       <div className="space-y-7">
       <PageHead
         title="Notices"
-        meta={hydrated ? `${open.length} open` : undefined}
+        meta={hydrated ? `${open.length} open · incoming supplier changes and what they break` : undefined}
       />
 
       <Panel>

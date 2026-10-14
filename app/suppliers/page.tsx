@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import { SUPPLIERS, NODES } from "@/data/factory";
 import { allPartsByRisk, qtyPerProduct } from "@/lib/graph";
 import { PageHead, Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
-import { Reveal } from "@/components/Reveal";
 
 export default function SuppliersPage() {
   const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), []);
@@ -28,10 +27,10 @@ export default function SuppliersPage() {
   const soleSourcedTotal = rows.reduce((t, r) => t + r.sole.length, 0);
 
   return (
-    <div className="mx-auto max-w-[1320px] px-8 py-14">
-      <PageHead title="Suppliers" meta={`${rows.length} suppliers`} />
+    <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
+      <PageHead title="Suppliers" meta={`${rows.length} suppliers · ranked by how often they discontinue parts`} />
 
-      <Reveal delay={1}>
+      <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
           <div className="border border-line p-6">
             <Figure label="Suppliers" value={rows.length} sub={`${NODES.filter((n) => n.kind === "part").length} components`} />
@@ -48,7 +47,7 @@ export default function SuppliersPage() {
             <Figure label="Inventory held" value={eur(totalInventory)} sub="at standard cost" />
           </div>
         </div>
-      </Reveal>
+      </div>
 
       <div className="mt-14">
         <SectionTitle aside={<span className="text-[12px] text-dim">by historical EOL rate</span>}>
@@ -56,9 +55,8 @@ export default function SuppliersPage() {
         </SectionTitle>
 
         <div className="space-y-px">
-          {rows.map(({ s, parts, atRisk, sole, inventory, products, worstLead }, i) => (
-            <Reveal key={s.id} delay={(i % 3) as 0 | 1 | 2}>
-              <div className="border border-line p-6 transition-colors duration-200 hover:border-line-bright">
+          {rows.map(({ s, parts, atRisk, sole, inventory, products, worstLead }) => (
+            <div key={s.id} className="border border-line p-6 transition-colors duration-200 hover:border-line-bright">
                 <div className="flex flex-wrap items-start justify-between gap-6">
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
@@ -108,8 +106,7 @@ export default function SuppliersPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </Reveal>
+            </div>
           ))}
         </div>
 

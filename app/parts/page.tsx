@@ -43,9 +43,9 @@ export default function PartsPage() {
   const inventory = rows.reduce((s, r) => s + (r.stockQty ?? 0) * (r.unitCostEur ?? 0), 0);
 
   return (
-    <div className="mx-auto max-w-[1320px] px-8 py-12">
+    <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
       <div className="space-y-7">
-      <PageHead title="Parts" meta={`${rows.length} components`} />
+      <PageHead title="Parts" meta={`${rows.length} components · scored for obsolescence risk before any notice`} />
 
       <Panel>
         <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">

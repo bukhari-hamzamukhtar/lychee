@@ -12,7 +12,6 @@ import {
   productAnnualRevenue,
 } from "@/lib/graph";
 import { PageHead, Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
-import { Reveal } from "@/components/Reveal";
 
 export default function ProductsPage() {
   const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), []);
@@ -39,10 +38,10 @@ export default function ProductsPage() {
   const exposedLines = rows.filter((r) => r.atRisk.length > 0).length;
 
   return (
-    <div className="mx-auto max-w-[1320px] px-8 py-14">
-      <PageHead title="Products" meta={`${rows.length} lines`} />
+    <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
+      <PageHead title="Products" meta={`${rows.length} lines · each carrying the risk of its most exposed component`} />
 
-      <Reveal delay={1}>
+      <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
           <div className="border border-line p-6">
             <Figure label="Product lines" value={rows.length} />
@@ -59,7 +58,7 @@ export default function ProductsPage() {
             <Figure label="Annual revenue" value={eur(totalRevenue)} sub="all lines, at standard margin" />
           </div>
         </div>
-      </Reveal>
+      </div>
 
       <div className="mt-14">
         <SectionTitle aside={<span className="text-[12px] text-dim">{rows.length} lines</span>}>
@@ -67,9 +66,8 @@ export default function ProductsPage() {
         </SectionTitle>
 
         <div className="space-y-px">
-          {rows.map(({ p, parts, atRisk, customers, certs, worst }, i) => (
-            <Reveal key={p.id} delay={(i % 3) as 0 | 1 | 2}>
-              <div className="border border-line p-6 transition-colors duration-200 hover:border-line-bright">
+          {rows.map(({ p, parts, atRisk, customers, certs, worst }) => (
+            <div key={p.id} className="border border-line p-6 transition-colors duration-200 hover:border-line-bright">
                 <div className="flex flex-wrap items-start justify-between gap-5">
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
@@ -135,8 +133,7 @@ export default function ProductsPage() {
                     )}
                   </div>
                 )}
-              </div>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>

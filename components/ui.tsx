@@ -239,6 +239,15 @@ export function Meter({ value, tone = "none" }: { value: number; tone?: Tone }) 
   );
 }
 
+/**
+ * Whole euros for anything substantial, cents below a hundred — a unit cost of
+ * EUR 2.84 was rendering as "EUR 3", which is wrong rather than merely rounded.
+ */
 export const eur = (n: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: Math.abs(n) < 100 && n % 1 !== 0 ? 2 : 0,
+    maximumFractionDigits: Math.abs(n) < 100 ? 2 : 0,
+  }).format(n);
 export const num = (n: number) => new Intl.NumberFormat("en-GB").format(n);

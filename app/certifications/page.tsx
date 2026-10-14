@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import { CERTIFICATIONS, NODES } from "@/data/factory";
 import { allPartsByRisk, node } from "@/lib/graph";
 import { PageHead, Eyebrow, Figure, SectionTitle, Tag, eur } from "@/components/ui";
-import { Reveal } from "@/components/Reveal";
 
 export default function CertificationsPage() {
   const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), []);
@@ -32,10 +31,10 @@ export default function CertificationsPage() {
   const longestRequal = Math.max(...rows.map((r) => r.c.requalWeeks));
 
   return (
-    <div className="mx-auto max-w-[1320px] px-8 py-14">
-      <PageHead title="Certifications" meta={`${rows.length} certificates`} />
+    <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
+      <PageHead title="Certifications" meta={`${rows.length} certificates · and the components that would re-open them`} />
 
-      <Reveal delay={1}>
+      <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
           <div className="border border-line p-6">
             <Figure
@@ -56,15 +55,14 @@ export default function CertificationsPage() {
             <Figure label="Longest requalification" value={`${longestRequal} wk`} sub="before you could ship" />
           </div>
         </div>
-      </Reveal>
+      </div>
 
       <div className="mt-14">
         <SectionTitle>Certificates</SectionTitle>
 
         <div className="space-y-px">
-          {rows.map(({ c, critical, exposed, worstCase }, i) => (
-            <Reveal key={c.id} delay={(i % 3) as 0 | 1 | 2}>
-              <div className="border border-line p-6 transition-colors duration-200 hover:border-line-bright">
+          {rows.map(({ c, critical, exposed, worstCase }) => (
+            <div key={c.id} className="border border-line p-6 transition-colors duration-200 hover:border-line-bright">
                 <div className="flex flex-wrap items-start justify-between gap-6">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
@@ -126,8 +124,7 @@ export default function CertificationsPage() {
                     ))}
                   </div>
                 </div>
-              </div>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>
