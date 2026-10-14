@@ -28,7 +28,7 @@ export default function SuppliersPage() {
 
   return (
     <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
-      <PageHead title="Suppliers" meta={`${rows.length} suppliers · ranked by how often they discontinue parts`} />
+      <PageHead title="Suppliers" meta={`Who supplies each component, ranked by how often they have discontinued parts before.`} />
 
       <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
@@ -51,7 +51,7 @@ export default function SuppliersPage() {
 
       <div className="mt-14">
         <SectionTitle aside={<span className="text-[12px] text-dim">by historical EOL rate</span>}>
-          Suppliers
+          Who supplies what, and how often they discontinue
         </SectionTitle>
 
         <div className="space-y-px">

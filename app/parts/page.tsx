@@ -45,7 +45,7 @@ export default function PartsPage() {
   return (
     <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
       <div className="space-y-7">
-      <PageHead title="Parts" meta={`${rows.length} components · scored for obsolescence risk before any notice`} />
+      <PageHead title="Parts" meta={`Every component in the bill of materials, scored for how likely it is to be discontinued — before any notice arrives.`} />
 
       <Panel>
         <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
@@ -87,7 +87,7 @@ export default function PartsPage() {
 
       <section>
         <SectionTitle aside={<span className="text-[11px] text-dim">{rows.length} shown</span>}>
-          Components
+          Every component, most exposed first
         </SectionTitle>
         {rows.length === 0 ? (
           <Panel className="px-5 py-10 text-center">

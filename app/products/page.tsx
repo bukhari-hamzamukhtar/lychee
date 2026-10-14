@@ -39,7 +39,7 @@ export default function ProductsPage() {
 
   return (
     <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
-      <PageHead title="Products" meta={`${rows.length} lines · each carrying the risk of its most exposed component`} />
+      <PageHead title="Products" meta={`What each product line is built from, and the risk it inherits from its most exposed component.`} />
 
       <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
@@ -62,7 +62,7 @@ export default function ProductsPage() {
 
       <div className="mt-14">
         <SectionTitle aside={<span className="text-[12px] text-dim">{rows.length} lines</span>}>
-          Lines
+          What each line depends on
         </SectionTitle>
 
         <div className="space-y-px">

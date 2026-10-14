@@ -32,7 +32,7 @@ export default function CertificationsPage() {
 
   return (
     <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
-      <PageHead title="Certifications" meta={`${rows.length} certificates · and the components that would re-open them`} />
+      <PageHead title="Certifications" meta={`Which certificates depend on which components, and what a change would force you to re-test.`} />
 
       <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
@@ -58,7 +58,7 @@ export default function CertificationsPage() {
       </div>
 
       <div className="mt-14">
-        <SectionTitle>Certificates</SectionTitle>
+        <SectionTitle>Every certificate and what re-opens it</SectionTitle>
 
         <div className="space-y-px">
           {rows.map(({ c, critical, exposed, worstCase }) => (

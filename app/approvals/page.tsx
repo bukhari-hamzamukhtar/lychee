@@ -26,7 +26,7 @@ export default function ApprovalsPage() {
       <div className="space-y-7">
       <PageHead
         title="Approvals"
-        meta={hydrated ? `${approvals.length} committed · what has been ordered, and on whose authority` : undefined}
+        meta="Last-time buys that have been committed: what was ordered, what it cost, and who authorised it."
       />
 
       <Panel>
@@ -43,7 +43,7 @@ export default function ApprovalsPage() {
       </Panel>
 
       <section>
-        <SectionTitle>Committed</SectionTitle>
+        <SectionTitle>What has been ordered</SectionTitle>
         {!hydrated ? (
           <SkeletonRows n={2} />
         ) : approvals.length === 0 ? (

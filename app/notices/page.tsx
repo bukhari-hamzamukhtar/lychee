@@ -48,7 +48,7 @@ export default function NoticesPage() {
       <div className="space-y-7">
       <PageHead
         title="Notices"
-        meta={hydrated ? `${open.length} open · incoming supplier changes and what they break` : undefined}
+        meta="Supplier end-of-life and change notices, and what each one breaks downstream."
       />
 
       <Panel>
@@ -68,7 +68,7 @@ export default function NoticesPage() {
 
       <section>
         <SectionTitle aside={<span className="text-[11px] text-dim">{rows.length} total</span>}>
-          Inbox
+          Every notice received
         </SectionTitle>
 
         {!hydrated ? (

@@ -16,3 +16,4 @@ tsconfig.tsbuildinfo
 
 # deck build artefacts are regenerated from build-deck.js
 submission/*.pdf
+.claude/

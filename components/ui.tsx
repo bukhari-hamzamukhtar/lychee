@@ -44,8 +44,8 @@ export function SectionTitle({
   aside?: React.ReactNode;
 }) {
   return (
-    <div className="mb-4 flex items-baseline justify-between gap-4 border-b border-line pb-2">
-      <h2 className="text-[11px] font-medium uppercase tracking-[0.18em] text-dim">{children}</h2>
+    <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-line pb-2.5">
+      <h2 className="text-[17px] font-normal tracking-tight text-fg">{children}</h2>
       {aside}
     </div>
   );
@@ -137,10 +137,10 @@ export function PageHead({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-10 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-b border-line pb-5">
-      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5">
-        <h1 className="text-[24px] font-normal tracking-tight">{title}</h1>
-        {meta && <span className="text-[14px] text-dim">{meta}</span>}
+    <div className="mb-11 flex flex-wrap items-end justify-between gap-x-10 gap-y-4 border-b border-line pb-6">
+      <div className="max-w-[60ch]">
+        <h1 className="text-[28px] font-normal leading-[1.15] tracking-tight">{title}</h1>
+        {meta && <p className="mt-2.5 text-[15px] leading-relaxed text-mid">{meta}</p>}
       </div>
       {actions}
     </div>
