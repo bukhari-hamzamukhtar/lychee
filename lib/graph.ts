@@ -270,6 +270,35 @@ export function productAnnualRevenue(productId: string): number {
   return (p.monthlyDemand ?? 0) * 12 * rolledUpCost(productId) * PRICE_MULTIPLE;
 }
 
+/** Every component beneath a node, with how many go into one unit of it. */
+export function partsUnder(id: string): { partId: string; qtyPer: number }[] {
+  const totals = new Map<string, number>();
+  const walk = (cur: string, mult: number) => {
+    const kids = childrenOf.get(cur) ?? [];
+    if (kids.length === 0) {
+      if (byId.get(cur)?.kind === "part") totals.set(cur, (totals.get(cur) ?? 0) + mult);
+      return;
+    }
+    for (const k of kids) walk(k.id, mult * k.qtyPer);
+  };
+  walk(id, 1);
+  return [...totals.entries()]
+    .map(([partId, qtyPer]) => ({ partId, qtyPer }))
+    .sort((a, b) => b.qtyPer - a.qtyPer);
+}
+
+/** Products are the graph's roots. */
+export function allProducts(): BomNode[] {
+  return NODES.filter((n) => n.kind === "product");
+}
+
+/** Annual build cost of a product line at standard cost. */
+export function annualMaterialCost(productId: string): number {
+  const p = byId.get(productId);
+  if (!p) return 0;
+  return (p.monthlyDemand ?? 0) * 12 * rolledUpCost(productId);
+}
+
 export function allPartsByRisk() {
   return NODES.filter((n) => n.kind === "part")
     .map((n) => obsolescenceRisk(n.id)!)
