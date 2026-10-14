@@ -11,6 +11,31 @@ LastBuy reads the notice and answers all of it in about twenty seconds.
 Built for the **AMD Developer Hackathon: ACT III** — Intelligent Industry, and the
 **Evolus Business Agents** partner track.
 
+## The application
+
+Three screens, not one page.
+
+| | |
+|---|---|
+| **Notices** | The inbox, with portfolio figures across every open notice, and a dropzone. Drop in a PDF or a photo of one, in any language. |
+| `/notices/[id]` | One notice: its impact, the agent run, the memo, the certification ruling, the drafts, and the approval gate. A run is saved, so revisiting does not re-bill it. |
+| **Parts** | The whole bill of materials, searchable, every component scored for obsolescence risk *before* a notice arrives. A part page shows what drives its score, every route by which it reaches a product, and what a discontinuation would cost. |
+| **Approvals** | What a person has actually committed, with the authority level QP-014 requires for the amount. |
+
+Uploaded notices, saved assessments and approvals persist in the browser, so the
+workspace survives a reload.
+
+### Uploading a real notice
+
+`MinerU2.5-Pro` accepts a base64 data URI, so a file is read on AMD GPUs without being
+hosted anywhere first. Evolus `doc-structure` pulls out the fields, an AMD-hosted model
+normalises them, and the part numbers are then matched against the real bill of
+materials — a document naming no component you build is **rejected**, not assessed,
+because an impact report for a part you do not make is worse than none.
+
+A complete ingest runs in about 17 seconds for roughly 2 Evolus credits and
+$0.00006 of AMD inference.
+
 ## How it works
 
 ```
