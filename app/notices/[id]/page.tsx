@@ -8,6 +8,7 @@ import { impactOf } from "@/lib/graph";
 import { SUPPLIERS } from "@/data/factory";
 import { ImpactPanel } from "@/components/ImpactPanel";
 import { AssessPanel, type AssessResult } from "@/components/AssessPanel";
+import { ScenarioControl } from "@/components/ScenarioControl";
 import { Tag, Button, Panel, Empty, SkeletonRows } from "@/components/ui";
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
@@ -122,6 +123,8 @@ export default function NoticeDetail({ params }: { params: Promise<{ id: string 
           {reports.map((r) => (
             <ImpactPanel key={r.partId} report={r} />
           ))}
+
+          <ScenarioControl report={reports[0]} />
 
           <AssessPanel
             pcnId={pcn.id}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ImpactReport } from "@/lib/types";
 import { Tag, Panel, SectionTitle, Figure, eur, num, verdictTone } from "./ui";
+import { PropagationGraph } from "./PropagationGraph";
 
 export function ImpactPanel({ report: r }: { report: ImpactReport }) {
   const underwater = r.coverGapWeeks > 0;
@@ -66,6 +67,12 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
           >
             Affected products &middot; {r.affectedProducts.length}
           </SectionTitle>
+          <div className="mb-6 overflow-x-auto border border-line py-4">
+            <div className="min-w-[720px]">
+              <PropagationGraph partId={r.partId} />
+            </div>
+          </div>
+
           <div className="stagger space-y-1.5">
             {r.affectedProducts.map((p) => (
               <div key={p.productId} className="border border-line bg-transparent px-3.5 py-2.5">
