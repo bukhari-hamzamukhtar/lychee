@@ -16,6 +16,8 @@ export interface AssessResult {
   originalLanguage: string;
   translated: string;
   memo: string;
+  certificationRuling?: string | null;
+  agentModel?: string | null;
   drafts: { supplier: string; customer: string };
   stages: Stage[];
   totals: { ms: number; evolusCredits: number; amdCostUsd: number };
@@ -135,6 +137,22 @@ export function AssessPanel({
               introduce a number or a date of its own.
             </p>
           </div>
+
+          {result.certificationRuling && (
+            <div>
+              <h3 className="mb-2 text-xs uppercase tracking-wide text-white/40">
+                Certification ruling &middot; Evolus agent
+              </h3>
+              <p className="whitespace-pre-wrap rounded border border-sky-400/25 bg-sky-400/5 px-3 py-3 text-sm leading-relaxed">
+                {result.certificationRuling}
+              </p>
+              <p className="mt-1.5 text-[11px] text-white/25">
+                Answered by the workspace agent from the approval records and QP-014,
+                running on the AMD-hosted model connected to this space. It cites the
+                clause, and declines anything the documents do not cover.
+              </p>
+            </div>
+          )}
 
           <div>
             <div className="mb-2 flex items-center gap-4">

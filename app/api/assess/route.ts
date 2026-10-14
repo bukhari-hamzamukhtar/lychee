@@ -14,7 +14,8 @@ import { NextResponse } from "next/server";
 import { PCN_INBOX, SUPPLIERS } from "@/data/factory";
 import { impactOf } from "@/lib/graph";
 import { chatGuarded, MODEL } from "@/lib/amd";
-import { runTool } from "@/lib/evolus";
+import { runTool, askAgent, agentConfigured } from "@/lib/evolus";
+import { docsMentioning, asContext } from "@/lib/library";
 import type { ImpactReport } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -108,7 +109,7 @@ export async function POST(req: Request) {
     // 4. Memo and drafts all depend only on the impact, so they run together.
     //    Sequentially this took ~17s of the budget; Vercel's Hobby plan caps a
     //    function at 60s and the Evolus tools are the slow part.
-    const [memo, supplierEmail, customerEmail] = await Promise.all([
+    const [memo, supplierEmail, customerEmail, ruling] = await Promise.all([
     timed(
       4,
       "write impact memo",
@@ -164,6 +165,31 @@ export async function POST(req: Request) {
         ),
       (r) => ({ credits: r.creditsConsumed }),
     ),
+
+    // 6. Certification consequence, answered by the workspace agent from the
+    //    standards documents. Only asked when a certificate is actually at
+    //    risk, because otherwise there is nothing for it to rule on.
+    lead.affectedCertifications.length > 0 && agentConfigured()
+      ? timed(
+          7,
+          "rule on certification impact",
+          "evolus",
+          () =>
+            askAgent(
+              `${lead.partId} is being discontinued. A last-time-buy is one option and ` +
+                `substitution is the other. In no more than four sentences, state which ` +
+                `certifications re-open on substitution, cite the clause, and say what ` +
+                `evidence the approval file would need. Do not restate quantities or costs.`,
+              asContext(docsMentioning(lead.partId)),
+            ).catch((e) => ({
+              // A failed ruling must not lose the rest of the assessment.
+              text: "",
+              conversationId: null,
+              model: "",
+              error: e instanceof Error ? e.message : "agent unavailable",
+            })),
+        )
+      : Promise.resolve(null),
     ]);
 
     stages.sort((a, b) => a.order - b.order);
@@ -185,6 +211,10 @@ export async function POST(req: Request) {
       extracted: extracted.output,
       reports,
       memo: memo.text,
+      /** Agent ruling, grounded in the standards documents. Null when no
+          certificate is affected, or empty when the agent could not answer. */
+      certificationRuling: ruling && "text" in ruling ? ruling.text : null,
+      agentModel: ruling && "model" in ruling ? ruling.model : null,
       drafts: {
         supplier: supplierEmail.output,
         customer: customerEmail.output,

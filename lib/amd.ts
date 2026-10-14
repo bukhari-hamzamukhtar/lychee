@@ -6,8 +6,10 @@
  * from anywhere on the team throttles everyone; every call here backs off.
  */
 
-const BASE = process.env.AMD_BASE_URL ?? "https://developer.amd.com.cn/radeon/api/v1";
-const KEY = process.env.AMD_API_KEY ?? "";
+// Read lazily; see the note in evolus.ts about imports being hoisted above
+// any environment loading the importer does.
+const base = () => process.env.AMD_BASE_URL ?? "https://developer.amd.com.cn/radeon/api/v1";
+const key = () => process.env.AMD_API_KEY ?? "";
 
 /**
  * Which hosted model does what.
@@ -21,10 +23,16 @@ const KEY = process.env.AMD_API_KEY ?? "";
  * guard below keeps a bad generation out of the response either way.
  */
 export const MODEL = {
-  generate: process.env.AMD_MODEL_GENERATE ?? "DeepSeek-V4-Flash",
-  fallback: process.env.AMD_MODEL_FALLBACK ?? "DeepSeek-V4-Flash",
-  ocr: process.env.AMD_MODEL_OCR ?? "MinerU2.5-Pro",
-} as const;
+  get generate() {
+    return process.env.AMD_MODEL_GENERATE ?? "DeepSeek-V4-Flash";
+  },
+  get fallback() {
+    return process.env.AMD_MODEL_FALLBACK ?? "DeepSeek-V4-Flash";
+  },
+  get ocr() {
+    return process.env.AMD_MODEL_OCR ?? "MinerU2.5-Pro";
+  },
+};
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -52,7 +60,7 @@ function acceptsReasoningEffort(model: string) {
 }
 
 async function post(path: string, body: unknown, timeoutMs: number) {
-  if (!KEY) throw new AmdError("AMD_API_KEY is not set", 401);
+  if (!key()) throw new AmdError("AMD_API_KEY is not set", 401);
 
   const MAX_TRIES = 4;
   let lastErr: AmdError | null = null;
@@ -61,9 +69,9 @@ async function post(path: string, body: unknown, timeoutMs: number) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeoutMs);
     try {
-      const res = await fetch(`${BASE}${path}`, {
+      const res = await fetch(`${base()}${path}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json" },
         body: JSON.stringify(body),
         signal: ctl.signal,
       });
@@ -220,8 +228,8 @@ export async function ocr(documentUrl: string, pages?: string) {
 }
 
 export async function usage() {
-  if (!KEY) throw new AmdError("AMD_API_KEY is not set", 401);
-  const res = await fetch(`${BASE}/usage`, { headers: { Authorization: `Bearer ${KEY}` } });
+  if (!key()) throw new AmdError("AMD_API_KEY is not set", 401);
+  const res = await fetch(`${base()}/usage`, { headers: { Authorization: `Bearer ${key()}` } });
   if (!res.ok) throw new AmdError(`usage ${res.status}`, res.status);
   const d = await res.json();
   return {
