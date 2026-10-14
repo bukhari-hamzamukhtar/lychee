@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useWorkspace } from "@/lib/store";
+import type { ImpactReport } from "@/lib/types";
+import { Badge, Button, Card, SectionTitle, eur, num } from "./ui";
 
 export interface Stage {
   order?: number;
@@ -25,11 +28,15 @@ export interface AssessResult {
   issues?: string[];
 }
 
+const PROVIDER = {
+  evolus: { label: "Evolus", cls: "border-primary/40 text-primary-soft" },
+  amd: { label: "AMD", cls: "border-warn/40 text-warn" },
+  local: { label: "engine", cls: "border-edge text-faint" },
+} as const;
+
 /**
- * The agent writes light markdown. Rendering it raw puts literal asterisks on
- * screen, so bold spans are turned into real emphasis and nothing else is
- * interpreted — the text is model output and should not be able to inject
- * markup of its own.
+ * The models write light markdown. Only bold is interpreted — the text is model
+ * output and should not be able to introduce markup of its own.
  */
 function RichText({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -37,7 +44,7 @@ function RichText({ text }: { text: string }) {
     <>
       {parts.map((p, i) =>
         p.startsWith("**") && p.endsWith("**") && p.length > 4 ? (
-          <strong key={i} className="font-semibold text-white">
+          <strong key={i} className="font-semibold text-body">
             {p.slice(2, -2)}
           </strong>
         ) : (
@@ -48,69 +55,72 @@ function RichText({ text }: { text: string }) {
   );
 }
 
-const PROVIDER = {
-  evolus: { label: "Evolus", cls: "border-sky-400/40 text-sky-300" },
-  amd: { label: "AMD", cls: "border-accent/50 text-accent" },
-  local: { label: "engine", cls: "border-white/20 text-white/50" },
-} as const;
+const PENDING: Stage[] = [
+  { name: "translate notice", provider: "evolus", ms: 0 },
+  { name: "extract fields", provider: "evolus", ms: 0 },
+  { name: "propagate through BOM", provider: "local", ms: 0 },
+  { name: "write impact memo", provider: "amd", ms: 0 },
+  { name: "draft supplier order", provider: "evolus", ms: 0 },
+  { name: "draft customer notice", provider: "evolus", ms: 0 },
+  { name: "rule on certification impact", provider: "evolus", ms: 0 },
+];
 
 export function AssessPanel({
+  pcnId,
+  report,
+  supplierName,
   result,
   running,
   error,
   onRun,
 }: {
+  pcnId: string;
+  report: ImpactReport | null;
+  supplierName: string;
   result: AssessResult | null;
   running: boolean;
   error: string | null;
   onRun: () => void;
 }) {
-  const [approved, setApproved] = useState(false);
-  const [open, setOpen] = useState<"supplier" | "customer">("supplier");
+  const { approve, isApproved } = useWorkspace();
+  const [tab, setTab] = useState<"supplier" | "customer">("supplier");
+  const approved = report ? isApproved(pcnId, report.partId) : false;
 
   return (
-    <section className="rounded-lg border border-edge">
-      <header className="flex items-center justify-between gap-4 border-b border-edge px-4 py-3">
+    <Card className="overflow-hidden">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-hair px-5 py-4">
         <div>
-          <h2 className="text-sm font-medium">Run the agent</h2>
-          <p className="text-xs text-white/40">
-            Translate, extract, propagate, draft. Nothing sends without approval.
+          <h2 className="text-[14px] font-medium">Run the agent</h2>
+          <p className="mt-0.5 text-[12px] text-faint">
+            Translate, extract, propagate, rule, draft. Nothing sends without approval.
           </p>
         </div>
-        <button
-          onClick={onRun}
-          disabled={running}
-          className="shrink-0 rounded bg-accent px-4 py-2 text-sm font-medium text-black transition disabled:opacity-40"
-        >
+        <Button onClick={onRun} disabled={running}>
           {running ? "Working…" : result ? "Run again" : "Assess notice"}
-        </button>
+        </Button>
       </header>
 
       {error && (
-        <p className="border-b border-edge px-4 py-3 text-xs text-crit">
+        <p className="animate-fade-in border-b border-hair bg-crit/5 px-5 py-3 text-[12px] text-crit">
           {error}
         </p>
       )}
 
       {(running || result) && (
-        <div className="border-b border-edge px-4 py-3">
+        <div className="border-b border-hair px-5 py-4">
           <ol className="space-y-1.5">
             {(result?.stages ?? PENDING).map((s, i) => (
-              <li key={i} className="flex items-center gap-3 text-xs">
+              <li key={i} className="flex items-center gap-3 text-[12px]">
                 <span
-                  className={`w-16 shrink-0 rounded border px-1.5 py-0.5 text-center text-[10px] ${
-                    PROVIDER[s.provider].cls
-                  }`}
+                  className={`w-16 shrink-0 rounded border px-1.5 py-0.5 text-center text-[10px] font-medium uppercase ${PROVIDER[s.provider].cls}`}
                 >
                   {PROVIDER[s.provider].label}
                 </span>
-                <span className="flex-1 text-white/60">{s.name}</span>
+                <span className="flex-1 text-muted">{s.name}</span>
                 {result ? (
                   <>
-                    <span className="tabular-nums text-white/35">
-                      {(s.ms / 1000).toFixed(1)}s
-                    </span>
-                    <span className="w-24 text-right text-[11px] text-white/25">
+                    <span className="tabular-nums text-faint">{(s.ms / 1000).toFixed(1)}s</span>
+                    <span className="w-24 text-right text-[11px] text-faint/70">
                       {s.credits
                         ? `${s.credits.toFixed(2)} credits`
                         : s.costUsd
@@ -119,17 +129,20 @@ export function AssessPanel({
                     </span>
                   </>
                 ) : (
-                  <span className="text-white/20">queued</span>
+                  <span className="flex items-center gap-1.5 text-faint">
+                    <span className="h-1 w-1 animate-pulse-ring rounded-full bg-primary" />
+                    queued
+                  </span>
                 )}
               </li>
             ))}
           </ol>
 
           {result && (
-            <p className="mt-3 border-t border-edge pt-2 text-xs text-white/40">
+            <p className="mt-3 border-t border-hair pt-2.5 text-[11.5px] text-faint">
               {(result.totals.ms / 1000).toFixed(1)}s end to end &middot;{" "}
               {result.totals.evolusCredits.toFixed(2)} Evolus credits &middot; $
-              {result.totals.amdCostUsd.toFixed(6)} of AMD inference &middot; model{" "}
+              {result.totals.amdCostUsd.toFixed(6)} of AMD inference &middot;{" "}
               <span className="font-mono">{result.model}</span>
             </p>
           )}
@@ -137,118 +150,118 @@ export function AssessPanel({
       )}
 
       {result && (
-        <div className="space-y-5 px-4 py-4">
+        <div className="space-y-6 px-5 py-5">
+          {result.issues && result.issues.length > 0 && (
+            <div className="rounded-lg border border-warn/40 bg-warn/5 px-3.5 py-3">
+              <p className="text-[12px] text-warn">{result.issues.join(" · ")}</p>
+              <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
+                The impact figures are computed from the bill of materials and depend on no
+                model, so they are unaffected.
+              </p>
+            </div>
+          )}
+
           {result.originalLanguage !== "en" && (
-            <details>
-              <summary className="cursor-pointer text-xs uppercase tracking-wide text-white/40">
+            <details className="group">
+              <summary className="cursor-pointer text-[11px] font-medium uppercase tracking-wider text-faint transition-colors hover:text-muted">
                 Translated from {result.originalLanguage.toUpperCase()}
               </summary>
-              <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-white/45">
+              <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-hair bg-panel/40 px-3.5 py-3 text-[11.5px] leading-relaxed text-muted">
                 {result.translated}
               </pre>
             </details>
           )}
 
-          {result.issues && result.issues.length > 0 && (
-            <div className="rounded border border-warn/40 bg-warn/5 px-3 py-2.5">
-              <p className="text-xs text-warn">
-                {result.issues.join(" · ")}
-              </p>
-              <p className="mt-1 text-[11px] text-white/35">
-                The impact figures above are computed from the bill of materials and do
-                not depend on any model, so they are unaffected.
-              </p>
-            </div>
-          )}
-
           {result.memo?.trim() && (
             <div>
-              <h3 className="mb-2 text-xs uppercase tracking-wide text-white/40">
-                Memo for the procurement lead
-              </h3>
-              <p className="whitespace-pre-wrap rounded border border-edge/70 px-3 py-3 text-sm leading-relaxed">
+              <SectionTitle>Memo for the procurement lead</SectionTitle>
+              <p className="whitespace-pre-wrap rounded-lg border border-hair bg-panel/40 px-3.5 py-3.5 text-[13px] leading-relaxed">
                 <RichText text={result.memo} />
               </p>
-              <p className="mt-1.5 text-[11px] text-white/25">
-                Written from figures the engine supplied. The model is not permitted to
-                introduce a number or a date of its own.
+              <p className="mt-1.5 text-[11px] text-faint">
+                Written from figures the engine supplied. The model may not introduce a number
+                or a date of its own.
               </p>
             </div>
           )}
 
           {result.certificationRuling && (
             <div>
-              <h3 className="mb-2 text-xs uppercase tracking-wide text-white/40">
-                Certification ruling &middot; Evolus agent
-              </h3>
-              <p className="whitespace-pre-wrap rounded border border-sky-400/25 bg-sky-400/5 px-3 py-3 text-sm leading-relaxed">
+              <SectionTitle aside={<Badge tone="info">Evolus agent on AMD</Badge>}>
+                Certification ruling
+              </SectionTitle>
+              <p className="whitespace-pre-wrap rounded-lg border border-primary/25 bg-primary/5 px-3.5 py-3.5 text-[13px] leading-relaxed">
                 <RichText text={result.certificationRuling} />
               </p>
-              <p className="mt-1.5 text-[11px] text-white/25">
-                Answered by the workspace agent from the approval records and QP-014,
-                running on the AMD-hosted model connected to this space. It cites the
-                clause, and declines anything the documents do not cover.
+              <p className="mt-1.5 text-[11px] text-faint">
+                Answered from the approval records and QP-014, citing the clause. It declines
+                anything the documents do not cover.
               </p>
             </div>
           )}
 
           <div>
-            <div className="mb-2 flex items-center gap-4">
-              <h3 className="text-xs uppercase tracking-wide text-white/40">Drafts</h3>
-              <div className="flex gap-1">
-                {(["supplier", "customer"] as const).map((k) => (
-                  <button
-                    key={k}
-                    onClick={() => setOpen(k)}
-                    className={`rounded border px-2 py-0.5 text-[11px] transition ${
-                      open === k
-                        ? "border-white/30 text-white/80"
-                        : "border-edge text-white/35 hover:text-white/60"
-                    }`}
-                  >
-                    {k === "supplier" ? "To supplier" : "To customers"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded border border-edge/70 px-3 py-3 text-xs leading-relaxed text-white/70">
-              {result.drafts[open]}
+            <SectionTitle
+              aside={
+                <div className="flex gap-1">
+                  {(["supplier", "customer"] as const).map((k) => (
+                    <button
+                      key={k}
+                      onClick={() => setTab(k)}
+                      className={`rounded-md border px-2 py-0.5 text-[11px] transition-colors ${
+                        tab === k
+                          ? "border-edge bg-panel text-body"
+                          : "border-transparent text-faint hover:text-muted"
+                      }`}
+                    >
+                      {k === "supplier" ? "To supplier" : "To customers"}
+                    </button>
+                  ))}
+                </div>
+              }
+            >
+              Drafts
+            </SectionTitle>
+            <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-hair bg-panel/40 px-3.5 py-3.5 text-[12px] leading-relaxed text-muted">
+              {result.drafts[tab]}
             </pre>
           </div>
 
-          <div className="rounded border border-edge/70 px-3 py-3">
+          <div className="rounded-lg border border-hair bg-panel/40 px-3.5 py-3.5">
             {approved ? (
-              <p className="text-xs text-ok">
-                Approved. Order and notifications queued for dispatch, with the memo
-                attached to the part record.
-              </p>
-            ) : (
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-ok" />
+                <p className="text-[13px] text-ok">
+                  Approved. Queued for dispatch and recorded against the part.
+                </p>
+              </div>
+            ) : report ? (
               <>
-                <button
-                  onClick={() => setApproved(true)}
-                  className="rounded border border-ok/50 px-4 py-2 text-sm text-ok transition hover:bg-ok/10"
+                <Button
+                  variant="ok"
+                  onClick={() =>
+                    approve({
+                      pcnId,
+                      partId: report.partId,
+                      qty: report.lastBuyQty,
+                      costEur: report.lastBuyCostEur,
+                      supplier: supplierName,
+                      lastBuyDate: report.lastBuyDate,
+                      approvedBy: "Procurement lead",
+                    })
+                  }
                 >
-                  Approve order and notifications
-                </button>
-                <p className="mt-2 text-xs text-white/30">
-                  A person commits the spend. The agent prepares the decision; it does
-                  not take it.
+                  Approve {num(report.lastBuyQty)} pcs &middot; {eur(report.lastBuyCostEur)}
+                </Button>
+                <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
+                  QP-014 §4 puts a commitment of this size with the board. A person commits the
+                  spend; the agent prepares the decision, it does not take it.
                 </p>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
-
-/** Shown while the run is in flight, so the sequence is visible as it happens. */
-const PENDING: Stage[] = [
-  { name: "translate notice", provider: "evolus", ms: 0 },
-  { name: "extract fields", provider: "evolus", ms: 0 },
-  { name: "propagate through BOM", provider: "local", ms: 0 },
-  { name: "write impact memo", provider: "amd", ms: 0 },
-  { name: "draft supplier order", provider: "evolus", ms: 0 },
-  { name: "draft customer notice", provider: "evolus", ms: 0 },
-];

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { Severity } from "@/lib/types";
 
 export function Card({
   children,
@@ -52,10 +51,6 @@ export function Badge({ tone = "muted", children }: { tone?: Tone; children: Rea
 
 export function verdictTone(v: "critical" | "high" | "watch"): Tone {
   return v === "critical" ? "crit" : v === "high" ? "warn" : "muted";
-}
-
-export function severityTone(s: Severity): Tone {
-  return s === "crit" ? "crit" : s === "warn" ? "warn" : "ok";
 }
 
 export function Stat({
