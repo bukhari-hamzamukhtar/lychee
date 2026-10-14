@@ -18,11 +18,14 @@ import { runTool } from "@/lib/evolus";
 import type { ImpactReport } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+// Vercel Hobby caps a function at 60s. The pipeline runs in well under that
+// now that the memo and the two drafts go out concurrently.
+export const maxDuration = 60;
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
 
 interface Stage {
+  order: number;
   name: string;
   provider: "evolus" | "amd" | "local";
   ms: number;
@@ -42,8 +45,16 @@ export async function POST(req: Request) {
   if (!pcn) return NextResponse.json({ error: `unknown notice ${pcnId}` }, { status: 404 });
 
   const supplier = SUPPLIERS.find((s) => s.id === pcn.supplierId);
+  const startedAt = Date.now();
   const stages: Stage[] = [];
+
+  /**
+   * `order` is passed in rather than taken from completion order, because the
+   * last three stages run concurrently and would otherwise be listed in
+   * whatever sequence they happened to finish.
+   */
   const timed = async <T>(
+    order: number,
     name: string,
     provider: Stage["provider"],
     fn: () => Promise<T>,
@@ -51,7 +62,7 @@ export async function POST(req: Request) {
   ): Promise<T> => {
     const t0 = Date.now();
     const out = await fn();
-    stages.push({ name, provider, ms: Date.now() - t0, ...(cost ? cost(out) : {}) });
+    stages.push({ order, name, provider, ms: Date.now() - t0, ...(cost ? cost(out) : {}) });
     return out;
   };
 
@@ -62,6 +73,7 @@ export async function POST(req: Request) {
         ? pcn.rawText
         : (
             await timed(
+              1,
               "translate notice",
               "evolus",
               () => runTool("translate", pcn.rawText, { target: "English", style: "formal" }),
@@ -71,6 +83,7 @@ export async function POST(req: Request) {
 
     // 2. Structured extraction, so the deadline is a date and not a sentence.
     const extracted = await timed(
+      2,
       "extract fields",
       "evolus",
       () => runTool("doc-structure", english, { format: "json", content: "data" }),
@@ -78,7 +91,7 @@ export async function POST(req: Request) {
     );
 
     // 3. The impact itself. Arithmetic over the BOM graph, no model.
-    const reports = await timed("propagate through BOM", "local", async () =>
+    const reports = await timed(3, "propagate through BOM", "local", async () =>
       pcn.partIds
         .map((id) => impactOf(id, pcn.lastBuyDate, ASOF))
         .filter((r): r is ImpactReport => r !== null),
@@ -92,8 +105,12 @@ export async function POST(req: Request) {
     }
     const lead = reports[0];
 
-    // 4. The memo. Numbers are handed to the model as facts, never asked for.
-    const memo = await timed(
+    // 4. Memo and drafts all depend only on the impact, so they run together.
+    //    Sequentially this took ~17s of the budget; Vercel's Hobby plan caps a
+    //    function at 60s and the Evolus tools are the slow part.
+    const [memo, supplierEmail, customerEmail] = await Promise.all([
+    timed(
+      4,
       "write impact memo",
       "amd",
       () =>
@@ -111,10 +128,11 @@ export async function POST(req: Request) {
           { model: MODEL.generate, fallbackModel: MODEL.fallback, maxTokens: 900, temperature: 0.3, topP: 1.0, askedShort: true },
         ),
       (r) => ({ costUsd: r.costUsd }),
-    );
+    ),
 
     // 5. Drafts. Nothing is addressed or sent until a person approves.
-    const supplierEmail = await timed(
+    timed(
+      5,
       "draft supplier order",
       "evolus",
       () =>
@@ -127,9 +145,10 @@ export async function POST(req: Request) {
           { mode: "write", tone: "commercial" },
         ),
       (r) => ({ credits: r.creditsConsumed }),
-    );
+    ),
 
-    const customerEmail = await timed(
+    timed(
+      6,
       "draft customer notice",
       "evolus",
       () =>
@@ -144,10 +163,15 @@ export async function POST(req: Request) {
           { mode: "write", tone: "formal" },
         ),
       (r) => ({ credits: r.creditsConsumed }),
-    );
+    ),
+    ]);
+
+    stages.sort((a, b) => a.order - b.order);
 
     const totals = {
-      ms: stages.reduce((s, x) => s + x.ms, 0),
+      // Wall clock, not the sum of the stages: the last three overlap, so
+      // adding them would report a duration nobody actually waited.
+      ms: Date.now() - startedAt,
       evolusCredits: Number(
         stages.reduce((s, x) => s + (x.credits ?? 0), 0).toFixed(3),
       ),

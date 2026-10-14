@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 export interface Stage {
+  order?: number;
   name: string;
   provider: "evolus" | "amd" | "local";
   ms: number;
