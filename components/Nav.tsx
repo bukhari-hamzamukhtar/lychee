@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useWorkspace } from "@/lib/store";
 import { Wordmark } from "./Logo";
 import { impactOf } from "@/lib/graph";
+
+/**
+ * Fixed 64px bar with a permanent bottom rule.
+ *
+ * Google runs 64px and ChatGPT 52px, both with a hard edge. The previous
+ * version went transparent over the landing hero, which is what made it melt
+ * into the browser chrome — there was nothing separating the page from the
+ * address bar. It is now always a distinct band.
+ */
 
 const TABS = [
   { href: "/notices", label: "Notices" },
@@ -21,18 +29,7 @@ const ASOF = new Date("2026-10-14T00:00:00Z");
 export function Nav() {
   const pathname = usePathname();
   const { notices, approvals, hydrated } = useWorkspace();
-  const [scrolled, setScrolled] = useState(false);
-  const onLanding = pathname === "/";
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  // The nearest deadline across the whole workspace, so the header always
-  // carries the one number that decides what to do next.
   const soonest = hydrated
     ? notices
         .flatMap((p) => p.partIds.map((id) => impactOf(id, p.lastBuyDate, ASOF)))
@@ -45,22 +42,13 @@ export function Nav() {
     href === "/notices" ? notices.length : href === "/approvals" ? approvals.length : null;
 
   return (
-    <header
-      className={`sticky top-0 z-40 bg-bg/90 backdrop-blur transition-[border-color] duration-300 ${
-        scrolled || !onLanding ? "border-b border-line" : "border-b border-transparent"
-      }`}
-    >
-      <div className="mx-auto flex max-w-[1400px] items-stretch px-6">
-        <Link
-          href="/"
-          className="flex shrink-0 items-center pr-7 text-fg transition-opacity hover:opacity-70"
-        >
+    <header className="sticky top-0 z-40 h-16 border-b border-line bg-bg/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-16 max-w-[1320px] items-center px-8">
+        <Link href="/" className="shrink-0 transition-opacity hover:opacity-70">
           <Wordmark />
         </Link>
 
-        <div className="hidden w-px bg-line lg:block" />
-
-        <nav className="hidden flex-1 items-stretch lg:flex">
+        <nav className="ml-14 hidden items-center gap-9 lg:flex">
           {TABS.map((t) => {
             const active = pathname.startsWith(t.href);
             const n = hydrated ? count(t.href) : null;
@@ -68,16 +56,16 @@ export function Nav() {
               <Link
                 key={t.href}
                 href={t.href}
-                className={`group relative flex items-center gap-1.5 px-5 text-[13.5px] transition-colors duration-200 ${
+                className={`group relative flex h-16 items-center gap-1.5 text-[15px] transition-colors duration-200 ${
                   active ? "text-fg" : "text-dim hover:text-fg"
                 }`}
               >
                 {t.label}
                 {n !== null && n > 0 && (
-                  <span className="text-[11px] tabular-nums text-dim">{n}</span>
+                  <span className="text-[12px] tabular-nums text-dim">{n}</span>
                 )}
                 <span
-                  className={`absolute inset-x-0 bottom-0 h-[2px] origin-left bg-accent transition-transform duration-300 ${
+                  className={`absolute inset-x-0 -bottom-px h-[2px] origin-left bg-accent transition-transform duration-300 ${
                     active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
                   }`}
                 />
@@ -86,31 +74,27 @@ export function Nav() {
           })}
         </nav>
 
-        {/* Compact nav for narrow screens. */}
-        <nav className="flex flex-1 items-center gap-4 overflow-x-auto lg:hidden">
-          {TABS.map((t) => {
-            const active = pathname.startsWith(t.href);
-            return (
-              <Link
-                key={t.href}
-                href={t.href}
-                className={`whitespace-nowrap py-5 text-[13px] ${active ? "text-fg" : "text-dim"}`}
-              >
-                {t.label}
-              </Link>
-            );
-          })}
+        <nav className="ml-8 flex items-center gap-6 overflow-x-auto lg:hidden">
+          {TABS.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={`whitespace-nowrap text-[14px] ${
+                pathname.startsWith(t.href) ? "text-fg" : "text-dim"
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
         </nav>
 
-        <div className="hidden w-px bg-line lg:block" />
-
-        <div className="hidden shrink-0 items-center gap-2.5 pl-6 lg:flex">
+        <div className="ml-auto hidden shrink-0 items-center gap-2.5 lg:flex">
           <span
             className={`h-1.5 w-1.5 rounded-full ${
               soonest !== undefined && soonest < 60 ? "animate-pulse-soft bg-accent" : "bg-ok"
             }`}
           />
-          <span className="text-[12.5px] text-dim">
+          <span className="text-[14px] text-dim">
             {soonest !== undefined ? (
               <>
                 next deadline <span className="tabular-nums text-fg">{soonest}d</span>

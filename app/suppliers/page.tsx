@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { SUPPLIERS, NODES } from "@/data/factory";
 import { allPartsByRisk, qtyPerProduct } from "@/lib/graph";
-import { Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
+import { PageHead, Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
 
 export default function SuppliersPage() {
@@ -28,18 +28,8 @@ export default function SuppliersPage() {
   const soleSourcedTotal = rows.reduce((t, r) => t + r.sole.length, 0);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-14">
-      <Reveal>
-        <Eyebrow>Suppliers</Eyebrow>
-        <h1 className="mt-4 text-[clamp(1.8rem,4vw,2.8rem)] font-bold leading-tight tracking-tight">
-          Who can stop your line, and how often they do
-        </h1>
-        <p className="mt-4 max-w-xl leading-relaxed text-mid">
-          Discontinuation is not random. Some manufacturers retire parts far more often
-          than others, and concentration in one of them is a risk whether or not a notice
-          has arrived yet.
-        </p>
-      </Reveal>
+    <div className="mx-auto max-w-[1320px] px-8 py-14">
+      <PageHead title="Suppliers" meta={`${rows.length} suppliers`} />
 
       <Reveal delay={1}>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
@@ -123,13 +113,6 @@ export default function SuppliersPage() {
           ))}
         </div>
 
-        <Reveal delay={1}>
-          <p className="mt-8 max-w-2xl text-[13px] leading-relaxed text-dim">
-            Rates are each manufacturer&rsquo;s own history of retiring catalogue lines. A
-            supplier at nine per cent will discontinue roughly one component in eleven each
-            year — so concentration there is a scheduling problem, not bad luck.
-          </p>
-        </Reveal>
       </div>
     </div>
   );

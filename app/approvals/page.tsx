@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useWorkspace } from "@/lib/store";
-import { Tag, Panel, Empty, SectionTitle, Figure, SkeletonRows, eur, num } from "@/components/ui";
+import { PageHead, Tag, Panel, Empty, SectionTitle, Figure, SkeletonRows, eur, num } from "@/components/ui";
 
 /** QP-014 §4. Who may commit what. */
 const AUTHORITY = [
@@ -22,15 +22,12 @@ export default function ApprovalsPage() {
   const boardLevel = approvals.filter((a) => a.costEur > 500_000).length;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
+    <div className="mx-auto max-w-[1320px] px-8 py-12">
       <div className="space-y-7">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Approvals</h1>
-        <p className="mt-1 text-[13px] text-mid">
-          Last-time-buy orders a person has committed to. Nothing reaches a supplier without
-          a named approver.
-        </p>
-      </div>
+      <PageHead
+        title="Approvals"
+        meta={hydrated ? `${approvals.length} committed` : undefined}
+      />
 
       <Panel>
         <div className="grid grid-cols-3 divide-x divide-line">

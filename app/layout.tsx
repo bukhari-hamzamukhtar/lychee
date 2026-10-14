@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Nav />
           {children}
           <footer className="border-t border-line">
-            <div className="mx-auto max-w-6xl px-6 py-12">
+            <div className="mx-auto max-w-[1320px] px-8 py-12">
               <div className="flex flex-wrap items-start justify-between gap-8">
                 <div className="flex items-center gap-2.5 text-dim">
                   <Logo size={22} />

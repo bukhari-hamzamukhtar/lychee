@@ -118,6 +118,42 @@ export function Figure({
   );
 }
 
+/**
+ * Page header for the working screens.
+ *
+ * ChatGPT puts a single 24px line of weight 400 above its input and nothing
+ * else — no heading hierarchy, no paragraph explaining the product to someone
+ * already inside it. These screens follow that: a name, an optional one-line
+ * orientation, and actions. Everything that explains the product lives on the
+ * landing page, where someone is still deciding.
+ */
+export function PageHead({
+  title,
+  meta,
+  actions,
+}: {
+  title: string;
+  meta?: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-10 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-b border-line pb-5">
+      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5">
+        <h1 className="text-[24px] font-normal tracking-tight">{title}</h1>
+        {meta && <span className="text-[14px] text-dim">{meta}</span>}
+      </div>
+      {actions}
+    </div>
+  );
+}
+
+/** A row of figures under a page head. Numbers, not cards. */
+export function FigureRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-12 flex flex-wrap gap-x-16 gap-y-7 border-b border-line pb-8">{children}</div>
+  );
+}
+
 export function Button({
   children,
   onClick,

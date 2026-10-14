@@ -11,7 +11,7 @@ import {
   allPartsByRisk,
   productAnnualRevenue,
 } from "@/lib/graph";
-import { Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
+import { PageHead, Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
 
 export default function ProductsPage() {
@@ -39,17 +39,8 @@ export default function ProductsPage() {
   const exposedLines = rows.filter((r) => r.atRisk.length > 0).length;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-14">
-      <Reveal>
-        <Eyebrow>Product lines</Eyebrow>
-        <h1 className="mt-4 text-[clamp(1.8rem,4vw,2.8rem)] font-bold leading-tight tracking-tight">
-          What you build, and what could stop it
-        </h1>
-        <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-mid">
-          Each line carries the risk of its most exposed component. A product does not stop
-          for the average of its parts; it stops for the one you cannot get.
-        </p>
-      </Reveal>
+    <div className="mx-auto max-w-[1320px] px-8 py-14">
+      <PageHead title="Products" meta={`${rows.length} lines`} />
 
       <Reveal delay={1}>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">

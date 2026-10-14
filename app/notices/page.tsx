@@ -6,7 +6,7 @@ import { useWorkspace } from "@/lib/store";
 import { impactOf, allPartsByRisk, productAnnualRevenue } from "@/lib/graph";
 import { SUPPLIERS } from "@/data/factory";
 import { UploadDropzone } from "@/components/UploadDropzone";
-import { Tag, Panel, SectionTitle, Figure, SkeletonRows, eur, num, verdictTone } from "@/components/ui";
+import { PageHead, Tag, Panel, SectionTitle, Figure, SkeletonRows, eur, num, verdictTone } from "@/components/ui";
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
 
@@ -44,14 +44,12 @@ export default function NoticesPage() {
   const atRisk = useMemo(() => allPartsByRisk().filter((r) => r.score >= 70).length, []);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
+    <div className="mx-auto max-w-[1320px] px-8 py-12">
       <div className="space-y-7">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Supplier notices</h1>
-        <p className="mt-1 text-[13px] text-mid">
-          Every incoming change, with what it does to your products.
-        </p>
-      </div>
+      <PageHead
+        title="Notices"
+        meta={hydrated ? `${open.length} open` : undefined}
+      />
 
       <Panel>
         <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">

@@ -59,18 +59,18 @@ export default function Landing() {
     <div>
       {/* ------------------------------------------------ hero */}
       <section className="relative overflow-hidden border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 pb-24 pt-28 sm:pt-36">
+        <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-24 sm:pt-32">
           <Reveal>
             <Eyebrow>Component obsolescence management</Eyebrow>
           </Reveal>
           <Reveal delay={1}>
-            <h1 className="mt-7 max-w-5xl text-[clamp(2.4rem,6.6vw,4.9rem)] font-extrabold leading-[0.97] tracking-tightest">
-              Know what a discontinued part
-              <br className="hidden sm:block" /> costs you — <span className="text-accent">before the window shuts.</span>
+            <h1 className="mt-8 max-w-[19ch] text-[clamp(2.4rem,5vw,3.75rem)] font-normal leading-[1.08] tracking-[-0.025em]">
+              Know what a discontinued part costs you{" "}
+              <span className="text-accent">before the window shuts.</span>
             </h1>
           </Reveal>
           <Reveal delay={2}>
-            <p className="mt-9 max-w-2xl text-[18px] leading-relaxed text-mid">
+            <p className="mt-9 max-w-[58ch] text-[18px] leading-relaxed text-mid">
               Suppliers retire thousands of components every year and give you weeks to
               place a final order. LastBuy reads the notice, traces the part through
               everything you build, and tells you what to buy and what it protects.
@@ -88,7 +88,7 @@ export default function Landing() {
           </Reveal>
         </div>
 
-        <div className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="mx-auto max-w-[1320px] px-8 pb-24">
           <Reveal>
             <div className="h-px w-full origin-left bg-line" />
             <div className="flex flex-wrap items-baseline justify-between gap-3 pt-9">
@@ -106,19 +106,19 @@ export default function Landing() {
 
       {/* ------------------------------------------------ the stakes, in general terms */}
       <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 py-28">
+        <div className="mx-auto max-w-[1320px] px-8 py-24">
           <div className="grid gap-16 lg:grid-cols-[1.1fr_1fr]">
             <Reveal>
-              <h2 className="max-w-xl text-[clamp(1.7rem,3.4vw,2.6rem)] font-bold leading-[1.15] tracking-tight">
+              <h2 className="max-w-[16ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
                 The notice is not the problem. Finding out what it breaks is.
               </h2>
-              <p className="mt-7 max-w-lg leading-relaxed text-mid">
+              <p className="mt-7 max-w-[56ch] leading-relaxed text-mid">
                 A component sits inside a module, inside a board, inside three products,
                 under four customer contracts and two certificates. Nobody holds that in
                 their head. So it gets reconstructed by hand, in a spreadsheet, every time
                 a letter arrives — and the deadline is already running.
               </p>
-              <p className="mt-5 max-w-lg leading-relaxed text-mid">
+              <p className="mt-5 max-w-[56ch] leading-relaxed text-mid">
                 Miss it and the part is gone for good. You redesign the product, or you
                 stop building it.
               </p>
@@ -144,10 +144,10 @@ export default function Landing() {
 
       {/* ------------------------------------------------ what you get */}
       <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 py-28">
+        <div className="mx-auto max-w-[1320px] px-8 py-24">
           <Reveal>
             <Eyebrow>What you get</Eyebrow>
-            <h2 className="mt-5 max-w-3xl text-[clamp(1.7rem,3.4vw,2.6rem)] font-bold leading-[1.15] tracking-tight">
+            <h2 className="mt-5 max-w-[22ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
               Four things, on every notice that arrives
             </h2>
           </Reveal>
@@ -158,8 +158,8 @@ export default function Landing() {
                 <div className="group grid gap-7 border border-line p-8 transition-colors duration-300 hover:border-line-bright lg:grid-cols-[3.5rem_1fr_auto] lg:items-start lg:gap-10">
                   <span className="font-mono text-[13px] text-dim">{c.n}</span>
                   <div>
-                    <h3 className="text-[21px] font-semibold tracking-tight">{c.title}</h3>
-                    <p className="mt-3 max-w-2xl leading-relaxed text-mid">{c.body}</p>
+                    <h3 className="text-[20px] font-medium tracking-tight">{c.title}</h3>
+                    <p className="mt-3 max-w-[62ch] leading-relaxed text-mid">{c.body}</p>
                   </div>
                   <div className="lg:w-44 lg:text-right">
                     <div className="text-[28px] font-semibold leading-none text-accent">{c.stat}</div>
@@ -199,10 +199,10 @@ export default function Landing() {
 
       {/* ------------------------------------------------ how */}
       <section id="how" className="scroll-mt-16 border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 py-28">
+        <div className="mx-auto max-w-[1320px] px-8 py-24">
           <Reveal>
             <Eyebrow>How it works</Eyebrow>
-            <h2 className="mt-5 max-w-3xl text-[clamp(1.7rem,3.4vw,2.6rem)] font-bold leading-[1.15] tracking-tight">
+            <h2 className="mt-5 max-w-[22ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
               Seven steps, about twenty seconds
             </h2>
           </Reveal>
@@ -228,13 +228,13 @@ export default function Landing() {
 
       {/* ------------------------------------------------ the worked example, as proof */}
       <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 py-28">
+        <div className="mx-auto max-w-[1320px] px-8 py-24">
           <Reveal>
             <Eyebrow>Proof, on a real component</Eyebrow>
-            <h2 className="mt-5 max-w-3xl text-[clamp(1.7rem,3.4vw,2.6rem)] font-bold leading-[1.15] tracking-tight">
+            <h2 className="mt-5 max-w-[22ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
               A digital isolator, discontinued with 34 days&rsquo; notice
             </h2>
-            <p className="mt-6 max-w-2xl leading-relaxed text-mid">
+            <p className="mt-6 max-w-[62ch] leading-relaxed text-mid">
               An ordinary part, in an ordinary drive. Here is everything the engine found
               that a spreadsheet would not have.
             </p>
@@ -256,7 +256,7 @@ export default function Landing() {
           </div>
 
           <Reveal delay={1}>
-            <p className="mt-10 max-w-2xl leading-relaxed text-mid">
+            <p className="mt-10 max-w-[62ch] leading-relaxed text-mid">
               The fourth number is the one nobody had. Four point seven weeks of cover
               against a twenty-six week lead time means the line was already twenty-one
               weeks exposed — true on the day the letter arrived, and true for months
@@ -268,14 +268,14 @@ export default function Landing() {
 
       {/* ------------------------------------------------ trust */}
       <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 py-28">
+        <div className="mx-auto max-w-[1320px] px-8 py-24">
           <div className="grid gap-16 lg:grid-cols-2">
             <Reveal>
               <Eyebrow>Why you can sign it</Eyebrow>
-              <h2 className="mt-5 text-[clamp(1.7rem,3.4vw,2.6rem)] font-bold leading-[1.15] tracking-tight">
+              <h2 className="mt-5 max-w-[16ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
                 It knows what it does not know
               </h2>
-              <p className="mt-7 max-w-lg leading-relaxed text-mid">
+              <p className="mt-7 max-w-[56ch] leading-relaxed text-mid">
                 Figures are computed, never generated — the model is handed them as facts
                 and forbidden from inventing one. Claims about a standard carry the clause
                 they came from. And asked something its documents do not cover, the analyst
@@ -309,17 +309,17 @@ export default function Landing() {
 
       {/* ------------------------------------------------ cost */}
       <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 py-28">
+        <div className="mx-auto max-w-[1320px] px-8 py-24">
           <Reveal>
             <Eyebrow>What it costs to run</Eyebrow>
-            <p className="mt-6 max-w-4xl text-[clamp(1.5rem,3.2vw,2.4rem)] font-bold leading-[1.2] tracking-tight">
+            <p className="mt-6 max-w-[26ch] text-[clamp(1.5rem,2.7vw,2.1rem)] font-normal leading-[1.2] tracking-[-0.02em]">
               A complete assessment costs{" "}
               <span className="text-accent">
                 <CountUp to={0.00012} decimals={5} prefix="$" />
               </span>{" "}
               of inference and about nine Evolus credits.
             </p>
-            <p className="mt-7 max-w-2xl leading-relaxed text-mid">
+            <p className="mt-7 max-w-[62ch] leading-relaxed text-mid">
               Cheap enough to run on every notice that arrives rather than triaging which
               ones look important — which is how the expensive ones get missed. Every stage
               reports its own cost on screen.
@@ -330,9 +330,9 @@ export default function Landing() {
 
       {/* ------------------------------------------------ close */}
       <section>
-        <div className="mx-auto max-w-6xl px-6 py-32">
+        <div className="mx-auto max-w-[1320px] px-8 py-28">
           <Reveal>
-            <p className="max-w-4xl text-[clamp(1.6rem,3.6vw,2.8rem)] font-bold leading-[1.15] tracking-tight">
+            <p className="max-w-[24ch] text-[clamp(1.6rem,3vw,2.4rem)] font-normal leading-[1.18] tracking-[-0.02em]">
               Obsolescence management is already an industry. Every tool in it is a
               database you search.
               <span className="mt-2 block text-accent">

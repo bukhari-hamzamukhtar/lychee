@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { CERTIFICATIONS, NODES } from "@/data/factory";
 import { allPartsByRisk, node } from "@/lib/graph";
-import { Eyebrow, Figure, SectionTitle, Tag, eur } from "@/components/ui";
+import { PageHead, Eyebrow, Figure, SectionTitle, Tag, eur } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
 
 export default function CertificationsPage() {
@@ -32,18 +32,8 @@ export default function CertificationsPage() {
   const longestRequal = Math.max(...rows.map((r) => r.c.requalWeeks));
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-14">
-      <Reveal>
-        <Eyebrow>Certifications</Eyebrow>
-        <h1 className="mt-4 text-[clamp(1.8rem,4vw,2.8rem)] font-bold leading-tight tracking-tight">
-          The approvals a substitution would re-open
-        </h1>
-        <p className="mt-4 max-w-xl leading-relaxed text-mid">
-          Certificates name specific components as critical. Swap one of those and the
-          approval has to be redone — with fresh test evidence, per affected product. This
-          is usually why a last-time-buy is cheaper than a redesign.
-        </p>
-      </Reveal>
+    <div className="mx-auto max-w-[1320px] px-8 py-14">
+      <PageHead title="Certifications" meta={`${rows.length} certificates`} />
 
       <Reveal delay={1}>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">

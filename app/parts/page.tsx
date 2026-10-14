@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { NODES, SUPPLIERS, EDGES } from "@/data/factory";
 import { allPartsByRisk, qtyPerProduct } from "@/lib/graph";
-import { Tag, Panel, SectionTitle, Figure, eur, num } from "@/components/ui";
+import { PageHead, Tag, Panel, SectionTitle, Figure, eur, num } from "@/components/ui";
 
 type SortKey = "risk" | "id" | "stock" | "lead";
 
@@ -43,15 +43,9 @@ export default function PartsPage() {
   const inventory = rows.reduce((s, r) => s + (r.stockQty ?? 0) * (r.unitCostEur ?? 0), 0);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
+    <div className="mx-auto max-w-[1320px] px-8 py-12">
       <div className="space-y-7">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Parts</h1>
-        <p className="mt-1 text-[13px] text-mid">
-          Every component in the bill of materials, scored for obsolescence risk before any
-          notice arrives.
-        </p>
-      </div>
+      <PageHead title="Parts" meta={`${rows.length} components`} />
 
       <Panel>
         <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
