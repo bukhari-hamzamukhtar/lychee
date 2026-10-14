@@ -8,7 +8,7 @@ import { impactOf } from "@/lib/graph";
 import { SUPPLIERS } from "@/data/factory";
 import { ImpactPanel } from "@/components/ImpactPanel";
 import { AssessPanel, type AssessResult } from "@/components/AssessPanel";
-import { Badge, Button, Card, Empty, SkeletonRows } from "@/components/ui";
+import { Tag, Button, Panel, Empty, SkeletonRows } from "@/components/ui";
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
 
@@ -71,25 +71,26 @@ export default function NoticeDetail({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/" className="text-[12px] text-faint transition-colors hover:text-muted">
+          <Link href="/" className="text-[12px] text-dim transition-colors hover:text-mid">
             &larr; Notices
           </Link>
           <h1 className="mt-1.5 font-mono text-lg font-semibold tracking-tight">{pcn.id}</h1>
-          <p className="mt-1 text-[13px] text-muted">
+          <p className="mt-1 text-[13px] text-mid">
             {supplier?.name} &middot; received {pcn.receivedAt} &middot;{" "}
             {pcn.type === "eol" ? "end of life" : "product change"}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge tone="muted">{pcn.language.toUpperCase()}</Badge>
-          {isUpload && <Badge tone="info">uploaded</Badge>}
-          <Badge tone="muted">last buy {pcn.lastBuyDate}</Badge>
+          <Tag tone="none">{pcn.language.toUpperCase()}</Tag>
+          {isUpload && <Tag tone="accent">uploaded</Tag>}
+          <Tag tone="none">last buy {pcn.lastBuyDate}</Tag>
           {isUpload && (
             <Button
-              variant="ghost"
+              tone="quiet"
               onClick={() => {
                 removeNotice(pcn.id);
                 router.push("/");
@@ -101,14 +102,14 @@ export default function NoticeDetail({ params }: { params: Promise<{ id: string 
         </div>
       </div>
 
-      <Card className="px-5 py-4">
-        <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-faint">
+      <Panel className="px-5 py-4">
+        <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-dim">
           As it arrived
         </p>
-        <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap text-[11.5px] leading-relaxed text-muted">
+        <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap text-[11.5px] leading-relaxed text-mid">
           {pcn.rawText}
         </pre>
-      </Card>
+      </Panel>
 
       {reports.length === 0 ? (
         <Empty
@@ -133,6 +134,7 @@ export default function NoticeDetail({ params }: { params: Promise<{ id: string 
           />
         </div>
       )}
+    </div>
     </div>
   );
 }

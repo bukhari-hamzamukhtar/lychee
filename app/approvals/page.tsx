@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useWorkspace } from "@/lib/store";
-import { Badge, Card, Empty, SectionTitle, Stat, SkeletonRows, eur, num } from "@/components/ui";
+import { Tag, Panel, Empty, SectionTitle, Figure, SkeletonRows, eur, num } from "@/components/ui";
 
 /** QP-014 §4. Who may commit what. */
 const AUTHORITY = [
@@ -22,27 +22,28 @@ export default function ApprovalsPage() {
   const boardLevel = approvals.filter((a) => a.costEur > 500_000).length;
 
   return (
-    <div className="space-y-7">
+    <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="space-y-7">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Approvals</h1>
-        <p className="mt-1 text-[13px] text-muted">
+        <p className="mt-1 text-[13px] text-mid">
           Last-time-buy orders a person has committed to. Nothing reaches a supplier without
           a named approver.
         </p>
       </div>
 
-      <Card>
-        <div className="grid grid-cols-3 divide-x divide-hair">
-          <Stat label="Approved orders" value={hydrated ? approvals.length : "—"} />
-          <Stat label="Committed" value={hydrated ? eur(committed) : "—"} />
-          <Stat
+      <Panel>
+        <div className="grid grid-cols-3 divide-x divide-line">
+          <Figure label="Approved orders" value={hydrated ? approvals.length : "—"} />
+          <Figure label="Committed" value={hydrated ? eur(committed) : "—"} />
+          <Figure
             label="Board level"
             value={hydrated ? boardLevel : "—"}
             sub="above EUR 500,000"
             tone={boardLevel > 0 ? "warn" : undefined}
           />
         </div>
-      </Card>
+      </Panel>
 
       <section>
         <SectionTitle>Committed</SectionTitle>
@@ -57,25 +58,25 @@ export default function ApprovalsPage() {
         ) : (
           <div className="stagger space-y-2">
             {approvals.map((a) => (
-              <Card key={a.id} className="px-4 py-3.5">
+              <Panel key={a.id} className="px-4 py-3.5">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[13px] text-body">{a.id}</span>
-                      <Badge tone="ok">approved</Badge>
-                      {a.costEur > 500_000 && <Badge tone="warn">board</Badge>}
+                      <span className="font-mono text-[13px] text-fg">{a.id}</span>
+                      <Tag tone="ok">approved</Tag>
+                      {a.costEur > 500_000 && <Tag tone="warn">board</Tag>}
                     </div>
-                    <p className="mt-1 truncate text-[12px] text-faint">
+                    <p className="mt-1 truncate text-[12px] text-dim">
                       <Link
                         href={`/parts/${encodeURIComponent(a.partId)}`}
-                        className="underline-offset-2 transition-colors hover:text-muted hover:underline"
+                        className="underline-offset-2 transition-colors hover:text-mid hover:underline"
                       >
                         {a.partId}
                       </Link>{" "}
                       &middot; {a.supplier} &middot; from{" "}
                       <Link
                         href={`/notices/${encodeURIComponent(a.pcnId)}`}
-                        className="underline-offset-2 transition-colors hover:text-muted hover:underline"
+                        className="underline-offset-2 transition-colors hover:text-mid hover:underline"
                       >
                         {a.pcnId}
                       </Link>
@@ -83,31 +84,32 @@ export default function ApprovalsPage() {
                   </div>
 
                   <div className="text-right">
-                    <div className="text-[10px] uppercase tracking-wider text-faint">Quantity</div>
-                    <div className="text-[13px] tabular-nums text-body">{num(a.qty)}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-dim">Quantity</div>
+                    <div className="text-[13px] tabular-nums text-fg">{num(a.qty)}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] uppercase tracking-wider text-faint">Value</div>
-                    <div className="text-[13px] tabular-nums text-body">{eur(a.costEur)}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-dim">Value</div>
+                    <div className="text-[13px] tabular-nums text-fg">{eur(a.costEur)}</div>
                   </div>
                   <div className="hidden text-right sm:block">
-                    <div className="text-[10px] uppercase tracking-wider text-faint">Order by</div>
-                    <div className="text-[13px] tabular-nums text-muted">{a.lastBuyDate}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-dim">Order by</div>
+                    <div className="text-[13px] tabular-nums text-mid">{a.lastBuyDate}</div>
                   </div>
                 </div>
 
-                <p className="mt-2.5 border-t border-hair pt-2.5 text-[11.5px] text-faint">
+                <p className="mt-2.5 border-t border-line pt-2.5 text-[11.5px] text-dim">
                   Authority: {approver(a.costEur)} &middot; approved by {a.approvedBy} on{" "}
                   {new Date(a.approvedAt).toLocaleString("en-GB", {
                     dateStyle: "medium",
                     timeStyle: "short",
                   })}
                 </p>
-              </Card>
+              </Panel>
             ))}
           </div>
         )}
       </section>
+    </div>
     </div>
   );
 }

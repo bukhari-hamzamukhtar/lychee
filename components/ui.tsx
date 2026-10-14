@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 
-export function Card({
+/**
+ * Visual language.
+ *
+ * Type and rule, not boxes. Nothing is a filled, tinted, glowing chip — colour
+ * carries meaning only on the glyph itself, and a hairline or a dot does the
+ * work a background tint would otherwise do. One accent, used rarely.
+ */
+
+export function Panel({
   children,
   className = "",
   interactive = false,
@@ -13,8 +21,8 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-xl border border-edge/70 bg-surface ${
-        interactive ? "transition-colors hover:border-edge hover:bg-panel/40" : ""
+      className={`border border-line ${
+        interactive ? "transition-colors duration-200 hover:border-line-bright" : ""
       } ${className}`}
     >
       {children}
@@ -22,54 +30,90 @@ export function Card({
   );
 }
 
-export function SectionTitle({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
+export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-4">
-      <h2 className="text-[11px] font-medium uppercase tracking-wider text-faint">{children}</h2>
+    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-dim">{children}</p>
+  );
+}
+
+export function SectionTitle({
+  children,
+  aside,
+}: {
+  children: React.ReactNode;
+  aside?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex items-baseline justify-between gap-4 border-b border-line pb-2">
+      <h2 className="text-[11px] font-medium uppercase tracking-[0.18em] text-dim">{children}</h2>
       {aside}
     </div>
   );
 }
 
-const TONE = {
-  crit: "border-crit/40 bg-crit/10 text-crit",
-  warn: "border-warn/40 bg-warn/10 text-warn",
-  ok: "border-ok/40 bg-ok/10 text-ok",
-  info: "border-primary/40 bg-primary/10 text-primary-soft",
-  muted: "border-edge bg-panel/60 text-muted",
-} as const;
+type Tone = "crit" | "warn" | "ok" | "accent" | "none";
 
-export type Tone = keyof typeof TONE;
+const DOT: Record<Exclude<Tone, "none">, string> = {
+  crit: "bg-crit",
+  warn: "bg-warn",
+  ok: "bg-ok",
+  accent: "bg-accent",
+};
+const TEXT: Record<Tone, string> = {
+  crit: "text-crit",
+  warn: "text-warn",
+  ok: "text-ok",
+  accent: "text-accent",
+  none: "text-dim",
+};
 
-export function Badge({ tone = "muted", children }: { tone?: Tone; children: React.ReactNode }) {
+/** A dot and a word. No pill, no fill. */
+export function Tag({ tone = "none", children }: { tone?: Tone; children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium ${TONE[tone]}`}>
+    <span className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider ${TEXT[tone]}`}>
+      {tone !== "none" && <span className={`h-1 w-1 rounded-full ${DOT[tone]}`} />}
+      {children}
+    </span>
+  );
+}
+
+/** Outline only, for things that are categories rather than states. */
+export function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center border border-line px-1.5 py-[1px] text-[10px] uppercase tracking-wider text-dim">
       {children}
     </span>
   );
 }
 
 export function verdictTone(v: "critical" | "high" | "watch"): Tone {
-  return v === "critical" ? "crit" : v === "high" ? "warn" : "muted";
+  return v === "critical" ? "crit" : v === "high" ? "warn" : "none";
 }
 
-export function Stat({
+export function Figure({
   label,
   value,
   sub,
-  tone,
+  tone = "none",
+  size = "md",
 }: {
   label: string;
   value: React.ReactNode;
   sub?: React.ReactNode;
-  tone?: "crit" | "warn" | "ok";
+  tone?: Tone;
+  size?: "md" | "lg";
 }) {
-  const color = tone === "crit" ? "text-crit" : tone === "warn" ? "text-warn" : tone === "ok" ? "text-ok" : "text-body";
   return (
-    <div className="px-4 py-3.5">
-      <div className="text-[10px] font-medium uppercase tracking-wider text-faint">{label}</div>
-      <div className={`mt-1 text-[22px] font-semibold leading-tight tabular-nums ${color}`}>{value}</div>
-      {sub && <div className="mt-0.5 text-[11px] text-faint">{sub}</div>}
+    <div>
+      <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-dim">{label}</div>
+      <div
+        className={`mt-1.5 font-semibold tabular-nums leading-none ${
+          size === "lg" ? "text-[40px]" : "text-[26px]"
+        } ${tone === "none" ? "text-fg" : TEXT[tone]}`}
+      >
+        {value}
+      </div>
+      {sub && <div className="mt-1.5 text-[11px] text-dim">{sub}</div>}
     </div>
   );
 }
@@ -77,31 +121,38 @@ export function Stat({
 export function Button({
   children,
   onClick,
+  href,
   disabled,
-  variant = "primary",
+  tone = "default",
   type = "button",
   className = "",
 }: {
   children: React.ReactNode;
   onClick?: () => void;
+  href?: string;
   disabled?: boolean;
-  variant?: "primary" | "ghost" | "ok" | "danger";
+  tone?: "default" | "accent" | "ok" | "quiet";
   type?: "button" | "submit";
   className?: string;
 }) {
   const styles = {
-    primary: "bg-primary text-white hover:bg-primary-strong",
-    ghost: "border border-edge text-muted hover:border-faint hover:text-body",
-    ok: "border border-ok/50 text-ok hover:bg-ok/10",
-    danger: "border border-crit/50 text-crit hover:bg-crit/10",
-  }[variant];
+    default: "border-line-bright text-fg hover:bg-fg hover:text-bg",
+    accent: "border-accent text-accent hover:bg-accent hover:text-bg",
+    ok: "border-ok/60 text-ok hover:bg-ok hover:text-bg",
+    quiet: "border-line text-dim hover:border-line-bright hover:text-fg",
+  }[tone];
+
+  const cls = `inline-flex items-center gap-2 border px-5 py-2.5 text-[13px] font-medium uppercase tracking-wider transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-30 ${styles} ${className}`;
+
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {children}
+      </Link>
+    );
+  }
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${styles} ${className}`}
-    >
+    <button type={type} onClick={onClick} disabled={disabled} className={cls}>
       {children}
     </button>
   );
@@ -117,27 +168,37 @@ export function Empty({
   action?: { href: string; label: string };
 }) {
   return (
-    <Card className="animate-fade-in px-6 py-14 text-center">
-      <p className="text-sm font-medium text-body">{title}</p>
-      <p className="mx-auto mt-1.5 max-w-md text-[13px] leading-relaxed text-faint">{body}</p>
+    <div className="border border-line px-6 py-16 text-center">
+      <p className="text-[15px] text-fg">{title}</p>
+      <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-dim">{body}</p>
       {action && (
-        <Link
-          href={action.href}
-          className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-strong"
-        >
-          {action.label}
-        </Link>
+        <div className="mt-6">
+          <Button href={action.href}>{action.label}</Button>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }
 
 export function SkeletonRows({ n = 4 }: { n?: number }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-px">
       {Array.from({ length: n }).map((_, i) => (
-        <div key={i} className="skeleton h-14 rounded-xl" />
+        <div key={i} className="skeleton h-16" />
       ))}
+    </div>
+  );
+}
+
+/** A bare horizontal meter. Line, not a filled bar in a rounded track. */
+export function Meter({ value, tone = "none" }: { value: number; tone?: Tone }) {
+  const bar = tone === "none" ? "bg-dim" : DOT[tone];
+  return (
+    <div className="h-px w-full bg-line">
+      <div
+        className={`h-px origin-left animate-grow ${bar}`}
+        style={{ width: `${Math.max(2, Math.min(100, value))}%` }}
+      />
     </div>
   );
 }

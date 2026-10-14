@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
-import { Button, Card } from "./ui";
+import { Button, Panel } from "./ui";
 import type { Pcn } from "@/lib/types";
 
 interface Stage {
@@ -17,8 +17,8 @@ interface Stage {
 
 const PROVIDER_STYLE = {
   amd: "border-warn/40 text-warn",
-  evolus: "border-primary/40 text-primary-soft",
-  local: "border-edge text-faint",
+  evolus: "border-line text-accent",
+  local: "border-line text-dim",
 } as const;
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp";
@@ -76,7 +76,7 @@ export function UploadDropzone() {
   );
 
   return (
-    <Card className="overflow-hidden">
+    <Panel className="overflow-hidden">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -90,7 +90,7 @@ export function UploadDropzone() {
           if (f && !busy) ingest(f);
         }}
         className={`flex flex-col items-center justify-center px-6 py-10 text-center transition-colors ${
-          over ? "bg-primary/10" : ""
+          over ? "" : ""
         }`}
       >
         <input
@@ -108,15 +108,15 @@ export function UploadDropzone() {
         {busy ? (
           <>
             <div className="mb-3 h-8 w-8 animate-pulse-ring rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-sm text-body">Reading the document&hellip;</p>
-            <p className="mt-1 text-[12px] text-faint">
+            <p className="text-sm text-fg">Reading the document&hellip;</p>
+            <p className="mt-1 text-[12px] text-dim">
               OCR runs on AMD, extraction through Evolus. Usually under thirty seconds.
             </p>
           </>
         ) : (
           <>
-            <p className="text-sm font-medium text-body">Drop a supplier notice here</p>
-            <p className="mt-1.5 max-w-md text-[12px] leading-relaxed text-faint">
+            <p className="text-sm font-medium text-fg">Drop a supplier notice here</p>
+            <p className="mt-1.5 max-w-md text-[12px] leading-relaxed text-dim">
               A PDF or a photo of one, in any language. It is read by MinerU on AMD GPUs,
               the fields are extracted through Evolus, and the part numbers are matched
               against your bill of materials.
@@ -124,13 +124,13 @@ export function UploadDropzone() {
             <div className="mt-4 flex items-center gap-2">
               <Button onClick={() => input.current?.click()}>Choose a file</Button>
             </div>
-            <p className="mt-3 text-[11px] text-faint">PDF, PNG, JPG or WebP &middot; up to 8 MB</p>
+            <p className="mt-3 text-[11px] text-dim">PDF, PNG, JPG or WebP &middot; up to 8 MB</p>
           </>
         )}
       </div>
 
       {(stages.length > 0 || error) && (
-        <div className="animate-fade-in border-t border-hair px-5 py-4">
+        <div className="animate-fade-in border-t border-line px-5 py-4">
           {stages.length > 0 && (
             <ol className="space-y-1.5">
               {stages.map((s, i) => (
@@ -142,23 +142,23 @@ export function UploadDropzone() {
                   >
                     {s.provider === "local" ? "engine" : s.provider}
                   </span>
-                  <span className="flex-1 text-muted">{s.name}</span>
-                  {s.note && <span className="text-[11px] text-faint">{s.note}</span>}
-                  <span className="tabular-nums text-faint">{(s.ms / 1000).toFixed(1)}s</span>
+                  <span className="flex-1 text-mid">{s.name}</span>
+                  {s.note && <span className="text-[11px] text-dim">{s.note}</span>}
+                  <span className="tabular-nums text-dim">{(s.ms / 1000).toFixed(1)}s</span>
                 </li>
               ))}
             </ol>
           )}
 
           {error && (
-            <div className="mt-3 rounded-lg border border-crit/40 bg-crit/5 px-3 py-2.5">
+            <div className="mt-3 border border-crit/50  px-3 py-2.5">
               <p className="text-[12px] text-crit">{error}</p>
               {readText && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[11px] text-faint">
+                  <summary className="cursor-pointer text-[11px] text-dim">
                     What was actually read from the file
                   </summary>
-                  <pre className="mt-1.5 max-h-40 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-muted">
+                  <pre className="mt-1.5 max-h-40 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-mid">
                     {readText}
                   </pre>
                 </details>
@@ -167,6 +167,6 @@ export function UploadDropzone() {
           )}
         </div>
       )}
-    </Card>
+    </Panel>
   );
 }

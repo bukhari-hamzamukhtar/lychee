@@ -2,54 +2,54 @@
 
 import Link from "next/link";
 import type { ImpactReport } from "@/lib/types";
-import { Badge, Card, SectionTitle, Stat, eur, num, verdictTone } from "./ui";
+import { Tag, Panel, SectionTitle, Figure, eur, num, verdictTone } from "./ui";
 
 export function ImpactPanel({ report: r }: { report: ImpactReport }) {
   const underwater = r.coverGapWeeks > 0;
 
   return (
-    <Card className="overflow-hidden">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-hair px-5 py-4">
+    <Panel className="overflow-hidden">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
         <div>
           <Link
             href={`/parts/${encodeURIComponent(r.partId)}`}
-            className="font-mono text-[15px] text-body underline-offset-4 transition-colors hover:text-primary-soft hover:underline"
+            className="font-mono text-[15px] text-fg underline-offset-4 transition-colors hover:text-accent hover:underline"
           >
             {r.partId}
           </Link>
-          <p className="mt-0.5 text-[12px] text-faint">
+          <p className="mt-0.5 text-[12px] text-dim">
             {r.partName} &middot; {r.supplierName}
           </p>
         </div>
-        <Badge tone={verdictTone(r.verdict)}>
+        <Tag tone={verdictTone(r.verdict)}>
           {r.verdict} &middot; {r.criticality}
-        </Badge>
+        </Tag>
       </header>
 
-      <div className="grid grid-cols-2 divide-x divide-y divide-hair sm:grid-cols-4 sm:divide-y-0">
-        <Stat
+      <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
+        <Figure
           label="Last buy in"
           value={`${r.daysToLastBuy} days`}
           sub={r.lastBuyDate}
           tone={r.daysToLastBuy < 60 ? "crit" : undefined}
         />
-        <Stat
+        <Figure
           label="Stock runway"
           value={`${r.runwayWeeks} wk`}
           sub={`lead time ${r.leadTimeWeeks} wk`}
           tone={underwater ? "crit" : "ok"}
         />
-        <Stat label="Must buy" value={num(r.lastBuyQty)} sub={eur(r.lastBuyCostEur)} />
-        <Stat label="Revenue at risk" value={eur(r.revenueAtRiskEur)} sub="per year" />
+        <Figure label="Must buy" value={num(r.lastBuyQty)} sub={eur(r.lastBuyCostEur)} />
+        <Figure label="Revenue at risk" value={eur(r.revenueAtRiskEur)} sub="per year" />
       </div>
 
       <div className="space-y-6 px-5 py-5">
         {underwater && (
-          <div className="animate-fade-in rounded-lg border border-crit/40 bg-crit/5 px-3.5 py-3">
+          <div className="animate-fade-in border border-crit/50  px-3.5 py-3">
             <p className="text-[13px] text-crit">
               Already {r.coverGapWeeks} weeks exposed, deadline aside.
             </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted">
+            <p className="mt-1 text-[12px] leading-relaxed text-mid">
               Stock covers {r.runwayWeeks} weeks and replenishment takes {r.leadTimeWeeks}. That
               gap is true today and has nothing to do with the last-buy date.
             </p>
@@ -59,7 +59,7 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
         <div>
           <SectionTitle
             aside={
-              <span className="text-[11px] text-faint">
+              <span className="text-[11px] text-dim">
                 {r.weeklyConsumption}/week &middot; {num(r.stockQty)} in stock
               </span>
             }
@@ -68,19 +68,19 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
           </SectionTitle>
           <div className="stagger space-y-1.5">
             {r.affectedProducts.map((p) => (
-              <div key={p.productId} className="rounded-lg border border-hair bg-panel/40 px-3.5 py-2.5">
+              <div key={p.productId} className="border border-line bg-transparent px-3.5 py-2.5">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-[13px]">
-                    <span className="font-mono text-[12px] text-muted">{p.productId}</span>{" "}
-                    <span className="text-body">{p.productName}</span>
+                    <span className="font-mono text-[12px] text-mid">{p.productId}</span>{" "}
+                    <span className="text-fg">{p.productName}</span>
                   </span>
-                  <span className="shrink-0 text-[12px] tabular-nums text-faint">
+                  <span className="shrink-0 text-[12px] tabular-nums text-dim">
                     {p.qtyPerUnit} /unit &middot; {num(p.monthlyDemand)}/mo
                   </span>
                 </div>
                 {/* Each route is printed so the quantity can be checked by hand. */}
                 {p.paths.map((path, i) => (
-                  <div key={i} className="mt-1 font-mono text-[10.5px] leading-relaxed text-faint/70">
+                  <div key={i} className="mt-1 font-mono text-[10.5px] leading-relaxed text-dim">
                     {path.join("  →  ")}
                   </div>
                 ))}
@@ -93,15 +93,15 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
           <div>
             <SectionTitle>Certifications re-opened</SectionTitle>
             {r.affectedCertifications.length === 0 ? (
-              <p className="text-[12px] text-faint">
+              <p className="text-[12px] text-dim">
                 None. This part is named critical in no certification clause.
               </p>
             ) : (
               <div className="space-y-1.5">
                 {r.affectedCertifications.map((c) => (
-                  <div key={c.id} className="rounded-lg border border-hair bg-panel/40 px-3.5 py-2.5">
-                    <p className="text-[12.5px] text-body">{c.name}</p>
-                    <p className="mt-0.5 text-[11px] text-faint">{c.clause}</p>
+                  <div key={c.id} className="border border-line bg-transparent px-3.5 py-2.5">
+                    <p className="text-[12.5px] text-fg">{c.name}</p>
+                    <p className="mt-0.5 text-[11px] text-dim">{c.clause}</p>
                     <p className="mt-1.5 text-[11.5px] text-warn">
                       {c.requalWeeks} wk requalification &middot; {eur(c.requalCostEur)}
                     </p>
@@ -116,14 +116,14 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
             <div className="space-y-1">
               {r.affectedCustomers.map((c) => (
                 <div key={c.customerId} className="flex justify-between text-[12.5px]">
-                  <span className="text-muted">{c.name}</span>
-                  <span className="tabular-nums text-faint">{num(c.annualUnits)}/yr</span>
+                  <span className="text-mid">{c.name}</span>
+                  <span className="tabular-nums text-dim">{num(c.annualUnits)}/yr</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
       </div>
-    </Card>
+    </Panel>
   );
 }

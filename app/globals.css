@@ -4,34 +4,50 @@
 
 :root { color-scheme: dark; }
 
+html { scroll-behavior: smooth; }
+
 body {
-  background: #0B1120;
-  color: #E2E8F0;
-  font-feature-settings: "tnum" 1, "cv11" 1;
+  background: #08090B;
+  color: #F2F4F7;
+  font-feature-settings: "tnum" 1, "ss01" 1;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Staggered entrance for lists, so a long table arrives in order. */
-.stagger > * { animation: fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+/* Scroll-triggered reveal. Elements start hidden and are released by an
+   IntersectionObserver adding .is-in, so the page tells its story as you move
+   through it rather than all at once on load. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.is-in { opacity: 1; transform: none; }
+.reveal-1 { transition-delay: 60ms; }
+.reveal-2 { transition-delay: 130ms; }
+.reveal-3 { transition-delay: 200ms; }
+.reveal-4 { transition-delay: 270ms; }
+
+.stagger > * { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .stagger > *:nth-child(1) { animation-delay: 0ms; }
-.stagger > *:nth-child(2) { animation-delay: 35ms; }
-.stagger > *:nth-child(3) { animation-delay: 70ms; }
-.stagger > *:nth-child(4) { animation-delay: 105ms; }
-.stagger > *:nth-child(5) { animation-delay: 140ms; }
-.stagger > *:nth-child(6) { animation-delay: 175ms; }
-.stagger > *:nth-child(n + 7) { animation-delay: 210ms; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(n + 6) { animation-delay: 200ms; }
 
 .skeleton {
-  background: linear-gradient(90deg, #1E293B 25%, #263449 50%, #1E293B 75%);
+  background: linear-gradient(90deg, #0E1013 25%, #1C1F24 50%, #0E1013 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 6px; border: 2px solid #0B1120; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
+::-webkit-scrollbar-thumb { background: #1C1F24; border: 3px solid #08090B; }
+::-webkit-scrollbar-thumb:hover { background: #32373F; }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

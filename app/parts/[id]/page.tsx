@@ -5,7 +5,7 @@ import { use, useMemo } from "react";
 import { NODES, SUPPLIERS, CERTIFICATIONS } from "@/data/factory";
 import { impactOf, obsolescenceRisk, qtyPerProduct, pathsToProducts, node } from "@/lib/graph";
 import { ImpactPanel } from "@/components/ImpactPanel";
-import { Badge, Card, Empty, SectionTitle, Stat, eur, num } from "@/components/ui";
+import { Tag, Panel, Empty, SectionTitle, Figure, eur, num } from "@/components/ui";
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
 /** Hypothetical deadline used to show what a notice on this part would mean. */
@@ -45,44 +45,45 @@ export default function PartDetail({ params }: { params: Promise<{ id: string }>
   const certs = CERTIFICATIONS.filter((c) => c.criticalPartIds.includes(partId));
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/parts" className="text-[12px] text-faint transition-colors hover:text-muted">
+          <Link href="/parts" className="text-[12px] text-dim transition-colors hover:text-mid">
             &larr; Parts
           </Link>
           <h1 className="mt-1.5 font-mono text-lg font-semibold tracking-tight">{part.id}</h1>
-          <p className="mt-1 text-[13px] text-muted">
+          <p className="mt-1 text-[13px] text-mid">
             {part.name} &middot; {supplier?.name} ({supplier?.country})
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {part.altSources === 0 && <Badge tone="crit">sole source</Badge>}
-          {part.lifecycle === "nrnd" && <Badge tone="warn">NRND</Badge>}
-          {certs.length > 0 && <Badge tone="info">certification critical</Badge>}
+          {part.altSources === 0 && <Tag tone="crit">sole source</Tag>}
+          {part.lifecycle === "nrnd" && <Tag tone="warn">NRND</Tag>}
+          {certs.length > 0 && <Tag tone="accent">certification critical</Tag>}
         </div>
       </div>
 
-      <Card>
-        <div className="grid grid-cols-2 divide-x divide-y divide-hair sm:grid-cols-4 sm:divide-y-0">
-          <Stat label="Unit cost" value={eur(part.unitCostEur ?? 0)} />
-          <Stat label="Lead time" value={`${part.leadTimeWeeks} wk`} />
-          <Stat label="Stock" value={num(part.stockQty ?? 0)} sub={eur((part.stockQty ?? 0) * (part.unitCostEur ?? 0))} />
-          <Stat
+      <Panel>
+        <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
+          <Figure label="Unit cost" value={eur(part.unitCostEur ?? 0)} />
+          <Figure label="Lead time" value={`${part.leadTimeWeeks} wk`} />
+          <Figure label="Stock" value={num(part.stockQty ?? 0)} sub={eur((part.stockQty ?? 0) * (part.unitCostEur ?? 0))} />
+          <Figure
             label="Alternative sources"
             value={part.altSources ?? 0}
             tone={part.altSources === 0 ? "crit" : undefined}
           />
         </div>
-      </Card>
+      </Panel>
 
       {risk && (
-        <Card className="px-5 py-5">
+        <Panel className="px-5 py-5">
           <SectionTitle
             aside={
               <span
                 className={`text-[13px] tabular-nums ${
-                  risk.score >= 70 ? "text-crit" : risk.score >= 45 ? "text-warn" : "text-muted"
+                  risk.score >= 70 ? "text-crit" : risk.score >= 45 ? "text-warn" : "text-mid"
                 }`}
               >
                 {risk.score} / 100
@@ -97,43 +98,43 @@ export default function PartDetail({ params }: { params: Promise<{ id: string }>
               .sort((a, b) => b[1] - a[1])
               .map(([k, v]) => (
                 <div key={k} className="flex items-center gap-3">
-                  <span className="w-60 shrink-0 text-[12px] text-muted">
+                  <span className="w-60 shrink-0 text-[12px] text-mid">
                     {FEATURE_LABEL[k] ?? k}
                   </span>
-                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-panel">
+                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-bg-raised">
                     <div
-                      className="h-full origin-left animate-grow rounded-full bg-primary"
+                      className="h-full origin-left animate-grow rounded-full bg-accent"
                       style={{ width: `${Math.round(Math.min(1, v) * 100)}%` }}
                     />
                   </div>
-                  <span className="w-10 text-right text-[11.5px] tabular-nums text-faint">
+                  <span className="w-10 text-right text-[11.5px] tabular-nums text-dim">
                     {v.toFixed(2)}
                   </span>
                 </div>
               ))}
           </div>
-          <p className="mt-3 text-[11.5px] leading-relaxed text-faint">
+          <p className="mt-3 text-[11.5px] leading-relaxed text-dim">
             Computed from this part&rsquo;s position in the graph and its supplier&rsquo;s history,
             not from any announcement. This is the queue to work through before a notice forces
             the issue.
           </p>
-        </Card>
+        </Panel>
       )}
 
       {Object.keys(qty).length === 0 ? (
         <Empty title="Not used in any product" body="This component appears in no assembly in the current bill of materials." />
       ) : (
         <>
-          <Card className="px-5 py-5">
+          <Panel className="px-5 py-5">
             <SectionTitle>Where it is used</SectionTitle>
             <div className="space-y-1.5">
               {paths.map((p, i) => (
-                <div key={i} className="font-mono text-[11px] leading-relaxed text-faint">
+                <div key={i} className="font-mono text-[11px] leading-relaxed text-dim">
                   {p.join("  →  ")}
                 </div>
               ))}
             </div>
-          </Card>
+          </Panel>
 
           {report && (
             <div>
@@ -145,6 +146,7 @@ export default function PartDetail({ params }: { params: Promise<{ id: string }>
           )}
         </>
       )}
+    </div>
     </div>
   );
 }
