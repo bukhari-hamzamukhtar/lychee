@@ -43,10 +43,10 @@ export default function ProductsPage() {
 
       <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure label="Product lines" value={rows.length} />
           </div>
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure
               label="With a part at risk"
               value={exposedLines}
@@ -54,7 +54,7 @@ export default function ProductsPage() {
               sub="risk score 70 or above"
             />
           </div>
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure label="Annual revenue" value={eur(totalRevenue)} sub="all lines, at standard margin" />
           </div>
         </div>

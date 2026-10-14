@@ -104,7 +104,7 @@ export function Figure({
   size?: "md" | "lg";
 }) {
   return (
-    <div>
+    <div className="px-6 py-5">
       <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-dim">{label}</div>
       <div
         className={`mt-1.5 font-semibold tabular-nums leading-none ${

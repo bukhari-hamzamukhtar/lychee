@@ -36,7 +36,7 @@ export default function CertificationsPage() {
 
       <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure
               label="Certificates exposed"
               value={`${exposedCerts} of ${rows.length}`}
@@ -44,14 +44,14 @@ export default function CertificationsPage() {
               sub="a critical part is at risk"
             />
           </div>
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure
               label="If those were substituted"
               value={eur(totalWorstCase)}
               sub="requalification, per affected product"
             />
           </div>
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure label="Longest requalification" value={`${longestRequal} wk`} sub="before you could ship" />
           </div>
         </div>

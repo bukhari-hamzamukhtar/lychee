@@ -32,10 +32,10 @@ export default function SuppliersPage() {
 
       <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure label="Suppliers" value={rows.length} sub={`${NODES.filter((n) => n.kind === "part").length} components`} />
           </div>
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure
               label="Sole sourced"
               value={soleSourcedTotal}
@@ -43,7 +43,7 @@ export default function SuppliersPage() {
               sub="no qualified alternative"
             />
           </div>
-          <div className="border border-line p-6">
+          <div className="border border-line">
             <Figure label="Inventory held" value={eur(totalInventory)} sub="at standard cost" />
           </div>
         </div>
