@@ -84,6 +84,12 @@ export default function NoticeDetail({ params }: { params: Promise<{ id: string 
             {supplier?.name} &middot; received {pcn.receivedAt} &middot;{" "}
             {pcn.type === "eol" ? "end of life" : "product change"}
           </p>
+          {pcn.typeEvidence && (
+            <p className="mt-1 text-[12.5px] text-dim">
+              Read as a {pcn.type === "eol" ? "discontinuance" : "change"} from{" "}
+              {pcn.typeEvidence}.
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Tag tone="none">{pcn.language.toUpperCase()}</Tag>

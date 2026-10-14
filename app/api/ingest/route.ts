@@ -15,6 +15,7 @@ import { ocr, chat, MODEL } from "@/lib/amd";
 import { runTool } from "@/lib/evolus";
 import { NODES } from "@/data/factory";
 import type { Pcn } from "@/lib/types";
+import { lastBuyDate, classify, labelled } from "@/lib/notice-read";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -42,84 +43,6 @@ const DEMO_PARTS = NODES.filter((n) => n.kind === "part").map((n) => n.id);
 function matchParts(haystack: string, known: string[]): string[] {
   const upper = haystack.toUpperCase();
   return known.filter((id) => id.length >= 4 && upper.includes(id.toUpperCase()));
-}
-
-const MONTHS = [
-  "january", "february", "march", "april", "may", "june",
-  "july", "august", "september", "october", "november", "december",
-];
-
-/** Labels a manufacturer might put beside the date that actually matters. */
-const LTB_LABELS = [
-  "last time buy", "last-time buy", "lasttime buy", "last time-buy",
-  "last order date", "last buy", "ltb", "last time order",
-  "final order", "last purchase", "letzter bestelltermin", "last time buy date",
-];
-
-function iso(y: number, m: number, d: number): string | null {
-  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
-  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-
-/**
- * Pull a date out of one line of text.
- *
- * Covers what manufacturers actually write: ISO, "17 November 2026",
- * "November 17, 2026", and numeric forms. Numeric day/month order is genuinely
- * ambiguous — 2/1/2014 is February 1st to a US manufacturer and January 2nd to
- * a European one — so a value above twelve settles it and otherwise month-first
- * is assumed, which is the convention in the notices this was tested against.
- */
-function dateIn(text: string): string | null {
-  const isoM = text.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
-  if (isoM) return iso(+isoM[1], +isoM[2], +isoM[3]);
-
-  // Escapes are doubled: inside a template literal "\b" is a backspace and
-  // "\d" is just the letter d, so single-escaped patterns match nothing.
-  const dmy = text.match(
-    new RegExp(`\\b(\\d{1,2})\\s+(${MONTHS.join("|")})\\w*\\s+(20\\d{2})\\b`, "i"),
-  );
-  if (dmy) return iso(+dmy[3], MONTHS.indexOf(dmy[2].toLowerCase()) + 1, +dmy[1]);
-
-  const mdy = text.match(
-    new RegExp(`\\b(${MONTHS.join("|")})\\w*\\s+(\\d{1,2}),?\\s+(20\\d{2})\\b`, "i"),
-  );
-  if (mdy) return iso(+mdy[3], MONTHS.indexOf(mdy[1].toLowerCase()) + 1, +mdy[2]);
-
-  const num = text.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d{2}|\d{2})\b/);
-  if (num) {
-    let [a, b] = [+num[1], +num[2]];
-    const yr = num[3].length === 2 ? 2000 + +num[3] : +num[3];
-    if (a > 12 && b <= 12) return iso(yr, b, a);   // unambiguously day-first
-    return iso(yr, a, b);                          // otherwise month-first
-  }
-  return null;
-}
-
-/**
- * Prefer the date sitting beside a last-time-buy label, and only fall back to
- * the first date anywhere. A notice is full of dates — qualification samples,
- * first shipment, the notice's own date — and the wrong one is worse than none.
- */
-function lastBuyDate(text: string): { date: string | null; from: string } {
-  const lines = text.split(/\n+/);
-  for (const line of lines) {
-    const lower = line.toLowerCase();
-    if (!LTB_LABELS.some((l) => lower.includes(l))) continue;
-    const d = dateIn(line);
-    if (d) return { date: d, from: line.trim().slice(0, 90) };
-  }
-  // the label and its date sometimes land on consecutive lines
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (!LTB_LABELS.some((l) => lines[i].toLowerCase().includes(l))) continue;
-    const d = dateIn(lines[i + 1]);
-    if (d) return { date: d, from: `${lines[i].trim()} / ${lines[i + 1].trim()}`.slice(0, 90) };
-  }
-  for (const line of lines) {
-    const d = dateIn(line);
-    if (d) return { date: d, from: `no last-time-buy label found; used "${line.trim().slice(0, 60)}"` };
-  }
-  return { date: null, from: "" };
 }
 
 export async function POST(req: Request) {
@@ -190,7 +113,10 @@ export async function POST(req: Request) {
               role: "system",
               content:
                 "You convert supplier notices into JSON. Output JSON only, no prose. " +
-                "Use null for anything the document does not state. Never guess a date.",
+                "Use null for anything the document does not state. Never guess a date. " +
+                'Use type "eol" only when the part is being discontinued outright. A ' +
+                "change of process, material, plating, assembly site or package marking " +
+                'is type "change", even when it has a last-time-buy date attached.',
             },
             {
               role: "user",
@@ -218,6 +144,7 @@ export async function POST(req: Request) {
     const claimed = Array.isArray(parsed.partNumbers) ? (parsed.partNumbers as string[]).join(" ") : "";
     const partIds = [...new Set([...matchParts(claimed, known), ...matchParts(text, known)])];
     const found = lastBuyDate(text);
+    const kind = classify(text, parsed.type);
     const chosen =
       (typeof parsed.lastBuyDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.lastBuyDate)
         ? parsed.lastBuyDate
@@ -267,12 +194,16 @@ export async function POST(req: Request) {
       supplierId: NODES.find((n) => n.id === partIds[0])?.supplierId ?? "ADI",
       receivedAt: new Date().toISOString().slice(0, 10),
       language: typeof parsed.language === "string" ? parsed.language.slice(0, 2).toLowerCase() : "en",
-      type: parsed.type === "change" ? "change" : "eol",
+      type: kind.type,
+      typeEvidence: kind.from,
       partIds,
       lastBuyDate: chosen,
       lastShipDate: typeof parsed.lastShipDate === "string" ? parsed.lastShipDate : undefined,
       replacementPartId: typeof parsed.replacementPart === "string" ? parsed.replacementPart : undefined,
-      reason: typeof parsed.reason === "string" ? parsed.reason : "",
+      reason:
+        labelled(text, ["reason for change", "reason for discontinuation", "reason:"]) ||
+        labelled(text, ["description of change"]) ||
+        (typeof parsed.reason === "string" ? parsed.reason : ""),
       rawText: text.slice(0, 4000),
     };
 

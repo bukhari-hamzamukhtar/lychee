@@ -60,6 +60,8 @@ export interface Pcn {
   receivedAt: string;
   language: string;
   type: "eol" | "change";
+  /** Where the type came from, when it was read off an uploaded document. */
+  typeEvidence?: string;
   partIds: string[];
   lastBuyDate: string;
   lastShipDate?: string;
