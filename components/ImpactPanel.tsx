@@ -13,7 +13,7 @@ const TONE = {
 } as const;
 
 export function ImpactPanel({ report: r }: { report: ImpactReport }) {
-  const underwater = r.runwayWeeks < (r.affectedProducts.length > 0 ? 26 : 0);
+  const underwater = r.coverGapWeeks > 0;
 
   return (
     <section className="rounded-lg border border-edge">
@@ -35,7 +35,7 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
         <Stat
           label="Stock runway"
           value={`${r.runwayWeeks} wk`}
-          sub={underwater ? "lead time 26 wk" : undefined}
+          sub={`lead time ${r.leadTimeWeeks} wk`}
           tone={underwater ? "crit" : "none"}
         />
         <Stat label="Must buy" value={num(r.lastBuyQty)} sub={eur(r.lastBuyCostEur)} />
@@ -45,8 +45,9 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
       <div className="space-y-5 px-4 py-4">
         {underwater && (
           <p className="rounded border border-crit/40 bg-crit/5 px-3 py-2 text-xs text-crit">
-            Stock covers {r.runwayWeeks} weeks but replenishment takes 26. Production is
-            already exposed, independently of the last-buy deadline.
+            Stock covers {r.runwayWeeks} weeks but replenishment takes {r.leadTimeWeeks}.
+            Production is already {r.coverGapWeeks} weeks exposed, independently of the
+            last-buy deadline.
           </p>
         )}
 

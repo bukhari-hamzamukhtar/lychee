@@ -196,8 +196,10 @@ function memoPrompt(notice: string, r: ImpactReport): string {
     `- per-unit usage: ${r.affectedProducts.map((p) => `${p.productId} needs ${p.qtyPerUnit}`).join(", ")}`,
     `- consumption: ${r.weeklyConsumption} pieces per week`,
     `- stock on hand: ${r.stockQty}, which is ${r.runwayWeeks} weeks of cover`,
-    `- replenishment lead time: ${r.affectedProducts.length ? "26" : "n/a"} weeks`,
+    `- replenishment lead time for this part: ${r.leadTimeWeeks} weeks`,
+    `- shortfall of cover against lead time: ${r.coverGapWeeks} weeks`,
     `- last-time-buy quantity required: ${r.lastBuyQty} pieces, EUR ${r.lastBuyCostEur}`,
+    "- that quantity covers the contracted service horizon of 156 weeks (3 years) plus a 10% spares buffer",
     `- annual revenue exposed: EUR ${r.revenueAtRiskEur}`,
     `- certifications requiring requalification: ${certs}`,
     `- customers under contract affected: ${r.affectedCustomers.length}`,
@@ -205,5 +207,8 @@ function memoPrompt(notice: string, r: ImpactReport): string {
     "Write the memo for the procurement lead. State the decision required and the",
     "deadline first. Call out the gap between stock cover and lead time explicitly if",
     "one exists. End with the single action you recommend.",
+    "",
+    `The only date you may mention is ${r.lastBuyDate}. Do not state any other date,`,
+    "and do not compute a figure that is not listed above.",
   ].join("\n");
 }

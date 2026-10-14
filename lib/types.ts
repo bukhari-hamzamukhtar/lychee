@@ -93,6 +93,12 @@ export interface ImpactReport {
   stockQty: number;
   weeklyConsumption: number;
   runwayWeeks: number;
+  /** Weeks to replenish this part. Per part, never assumed. */
+  leadTimeWeeks: number;
+  /** How far runway falls short of lead time; 0 when cover is adequate. */
+  coverGapWeeks: number;
+  /** Weeks of supply the last-buy quantity actually secures. */
+  coverageWeeks: number;
   /** Units to buy before the deadline to cover the service horizon. */
   lastBuyQty: number;
   lastBuyCostEur: number;

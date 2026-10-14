@@ -167,6 +167,10 @@ export function impactOf(partId: string, lastBuyDate: string, asOf: Date): Impac
 
   const stockQty = part.stockQty ?? 0;
   const runwayWeeks = weeklyConsumption > 0 ? stockQty / weeklyConsumption : Infinity;
+  const leadTimeWeeks = part.leadTimeWeeks ?? 0;
+  const coverGapWeeks = Number.isFinite(runwayWeeks)
+    ? Math.max(0, round1(leadTimeWeeks - runwayWeeks))
+    : 0;
 
   const needed = weeklyConsumption * SERVICE_HORIZON_WEEKS * (1 + SPARES_BUFFER);
   const lastBuyQty = Math.max(0, Math.ceil(needed - stockQty));
@@ -183,7 +187,7 @@ export function impactOf(partId: string, lastBuyDate: string, asOf: Date): Impac
   // Each term is clamped to 0..1 then weighted, so the score stays explainable.
   const urgency = clamp01(1 - daysToLastBuy / 365);
   const reach = clamp01(affectedProducts.length / 4);
-  const coverGap = clamp01(1 - runwayWeeks / Math.max(1, part.leadTimeWeeks ?? 1));
+  const coverGap = clamp01(1 - runwayWeeks / Math.max(1, leadTimeWeeks || 1));
   const sole = part.altSources === 0 ? 1 : part.altSources === 1 ? 0.5 : 0;
   const certHit = affectedCertifications.length > 0 ? 1 : 0;
 
@@ -204,6 +208,9 @@ export function impactOf(partId: string, lastBuyDate: string, asOf: Date): Impac
     stockQty,
     weeklyConsumption: round1(weeklyConsumption),
     runwayWeeks: Number.isFinite(runwayWeeks) ? round1(runwayWeeks) : Infinity,
+    leadTimeWeeks,
+    coverGapWeeks,
+    coverageWeeks: weeklyConsumption > 0 ? Math.round((stockQty + lastBuyQty) / weeklyConsumption) : 0,
     lastBuyQty,
     lastBuyCostEur: Math.round(lastBuyCostEur),
     revenueAtRiskEur: Math.round(revenueAtRiskEur),
