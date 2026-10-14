@@ -22,6 +22,7 @@ const TABS = [
   { href: "/suppliers", label: "Suppliers" },
   { href: "/certifications", label: "Certifications" },
   { href: "/approvals", label: "Approvals" },
+  { href: "/import", label: "Import" },
 ] as const;
 
 const ASOF = new Date("2026-10-14T00:00:00Z");

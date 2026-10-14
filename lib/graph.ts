@@ -8,7 +8,42 @@
  * showing the path it used so a human can check it.
  */
 import { NODES, EDGES, SUPPLIERS, CUSTOMERS, CERTIFICATIONS } from "@/data/factory";
-import type { BomNode, ImpactReport, AffectedProduct } from "./types";
+import type {
+  BomNode,
+  BomEdge,
+  Supplier,
+  Customer,
+  Certification,
+  ImpactReport,
+  AffectedProduct,
+} from "./types";
+
+/**
+ * The engine runs against whichever dataset is active.
+ *
+ * It ships with the demo factory loaded, but a company's bill of materials is
+ * its own — no obsolescence tool can know yours, which is why every product in
+ * this category asks you to bring it. `setActiveDataset` swaps it, rebuilds the
+ * adjacency and clears the memos, and every function below keeps working
+ * unchanged because they all read through this one object.
+ */
+export interface Dataset {
+  nodes: BomNode[];
+  edges: BomEdge[];
+  suppliers: Supplier[];
+  customers: Customer[];
+  certifications: Certification[];
+}
+
+export const DEMO_DATASET: Dataset = {
+  nodes: NODES,
+  edges: EDGES,
+  suppliers: SUPPLIERS,
+  customers: CUSTOMERS,
+  certifications: CERTIFICATIONS,
+};
+
+let active: Dataset = DEMO_DATASET;
 
 const WEEKS_PER_MONTH = 4.333;
 /** How long the company contracts to keep supplying spares. */
@@ -18,16 +53,44 @@ export const SPARES_BUFFER = 0.1;
 /** Finished-goods price as a multiple of BOM cost. Industry rule of thumb. */
 const PRICE_MULTIPLE = 3;
 
-const byId = new Map<string, BomNode>(NODES.map((n) => [n.id, n]));
-const supplierById = new Map(SUPPLIERS.map((s) => [s.id, s]));
+const qtyMemo = new Map<string, Record<string, number>>();
+const costMemo = new Map<string, number>();
 
-const parentsOf = new Map<string, { id: string; qtyPer: number }[]>();
-const childrenOf = new Map<string, { id: string; qtyPer: number }[]>();
-for (const e of EDGES) {
-  if (!parentsOf.has(e.child)) parentsOf.set(e.child, []);
-  parentsOf.get(e.child)!.push({ id: e.parent, qtyPer: e.qtyPer });
-  if (!childrenOf.has(e.parent)) childrenOf.set(e.parent, []);
-  childrenOf.get(e.parent)!.push({ id: e.child, qtyPer: e.qtyPer });
+let byId = new Map<string, BomNode>();
+let supplierById = new Map<string, Supplier>();
+let parentsOf = new Map<string, { id: string; qtyPer: number }[]>();
+let childrenOf = new Map<string, { id: string; qtyPer: number }[]>();
+
+function rebuild() {
+  byId = new Map(active.nodes.map((n) => [n.id, n]));
+  supplierById = new Map(active.suppliers.map((s) => [s.id, s]));
+  parentsOf = new Map();
+  childrenOf = new Map();
+  for (const e of active.edges) {
+    if (!parentsOf.has(e.child)) parentsOf.set(e.child, []);
+    parentsOf.get(e.child)!.push({ id: e.parent, qtyPer: e.qtyPer });
+    if (!childrenOf.has(e.parent)) childrenOf.set(e.parent, []);
+    childrenOf.get(e.parent)!.push({ id: e.child, qtyPer: e.qtyPer });
+  }
+  // Memos are keyed by node id, which means nothing once the dataset changes.
+  qtyMemo.clear();
+  costMemo.clear();
+}
+
+/** Swap in an imported bill of materials. */
+export function setActiveDataset(ds: Dataset) {
+  active = ds;
+  rebuild();
+}
+
+/** Back to the shipped demo factory. */
+export function resetDataset() {
+  active = DEMO_DATASET;
+  rebuild();
+}
+
+export function activeDataset(): Dataset {
+  return active;
 }
 
 export function node(id: string): BomNode | undefined {
@@ -42,7 +105,6 @@ export function node(id: string): BomNode | undefined {
  * per product — summed over every parent, because a component can reach the
  * same product through more than one route.
  */
-const qtyMemo = new Map<string, Record<string, number>>();
 export function qtyPerProduct(id: string): Record<string, number> {
   const hit = qtyMemo.get(id);
   if (hit) return hit;
@@ -91,7 +153,6 @@ export function pathsToProducts(id: string, limitPerRoot = 3): string[][] {
 }
 
 /** Rolled-up material cost of a node, by walking the BOM downward. */
-const costMemo = new Map<string, number>();
 export function rolledUpCost(id: string): number {
   const hit = costMemo.get(id);
   if (hit !== undefined) return hit;
@@ -140,7 +201,7 @@ export function impactOf(partId: string, lastBuyDate: string, asOf: Date): Impac
     ...new Set(allPaths.flatMap((p) => p.slice(1, -1))),
   ].filter((id) => byId.get(id)?.kind === "assembly");
 
-  const affectedCustomers = CUSTOMERS.filter((c) =>
+  const affectedCustomers = active.customers.filter((c) =>
     c.productIds.some((p) => productIds.has(p)),
   ).map((c) => ({
     customerId: c.id,
@@ -150,7 +211,7 @@ export function impactOf(partId: string, lastBuyDate: string, asOf: Date): Impac
   }));
 
   // A certificate only re-opens if this part is named critical in it.
-  const affectedCertifications = CERTIFICATIONS.filter(
+  const affectedCertifications = active.certifications.filter(
     (c) => c.criticalPartIds.includes(partId) && c.productIds.some((p) => productIds.has(p)),
   ).map((c) => ({
     id: c.id,
@@ -289,7 +350,7 @@ export function partsUnder(id: string): { partId: string; qtyPer: number }[] {
 
 /** Products are the graph's roots. */
 export function allProducts(): BomNode[] {
-  return NODES.filter((n) => n.kind === "product");
+  return active.nodes.filter((n) => n.kind === "product");
 }
 
 /** Annual build cost of a product line at standard cost. */
@@ -300,7 +361,7 @@ export function annualMaterialCost(productId: string): number {
 }
 
 export function allPartsByRisk() {
-  return NODES.filter((n) => n.kind === "part")
+  return active.nodes.filter((n) => n.kind === "part")
     .map((n) => obsolescenceRisk(n.id)!)
     .sort((a, b) => b.score - a.score);
 }
@@ -311,3 +372,5 @@ function clamp01(x: number) {
 function round1(x: number) {
   return Math.round(x * 10) / 10;
 }
+
+rebuild();

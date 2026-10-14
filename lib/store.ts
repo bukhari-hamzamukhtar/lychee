@@ -12,6 +12,7 @@
  */
 import { createContext, useContext, useCallback, useEffect, useMemo, useState } from "react";
 import { PCN_INBOX } from "@/data/factory";
+import { setActiveDataset, resetDataset, type Dataset } from "./graph";
 import type { Pcn } from "./types";
 
 const KEY = "lastbuy.workspace.v1";
@@ -34,13 +35,20 @@ export interface StoredAssessment {
   payload: unknown;
 }
 
+export interface ImportedBom {
+  name: string;
+  importedAt: string;
+  dataset: Dataset;
+}
+
 interface Persisted {
   uploaded: Pcn[];
   approvals: Approval[];
   assessments: StoredAssessment[];
+  bom: ImportedBom | null;
 }
 
-const EMPTY: Persisted = { uploaded: [], approvals: [], assessments: [] };
+const EMPTY: Persisted = { uploaded: [], approvals: [], assessments: [], bom: null };
 
 function read(): Persisted {
   if (typeof window === "undefined") return EMPTY;
@@ -52,6 +60,7 @@ function read(): Persisted {
       uploaded: parsed.uploaded ?? [],
       approvals: parsed.approvals ?? [],
       assessments: parsed.assessments ?? [],
+      bom: parsed.bom ?? null,
     };
   } catch {
     // A corrupt or blocked store should not take the app down with it.
@@ -73,6 +82,9 @@ interface Workspace {
   approvals: Approval[];
   assessments: StoredAssessment[];
   hydrated: boolean;
+  bom: ImportedBom | null;
+  loadBom: (bom: ImportedBom) => void;
+  clearBom: () => void;
   addNotice: (pcn: Pcn) => void;
   removeNotice: (id: string) => void;
   approve: (a: Omit<Approval, "id" | "approvedAt">) => void;
@@ -91,7 +103,11 @@ export function useWorkspaceState(): Workspace {
   // Read after mount only: localStorage does not exist during the server render,
   // and reading it in an initialiser would produce a hydration mismatch.
   useEffect(() => {
-    setState(read());
+    const stored = read();
+    // The engine is a module singleton, so a bill of materials imported in an
+    // earlier visit has to be put back before anything renders against it.
+    if (stored.bom) setActiveDataset(stored.bom.dataset);
+    setState(stored);
     setHydrated(true);
   }, []);
 
@@ -144,7 +160,23 @@ export function useWorkspaceState(): Workspace {
     [persist],
   );
 
-  const reset = useCallback(() => persist(EMPTY), [persist]);
+  const loadBom = useCallback(
+    (bom: ImportedBom) => {
+      setActiveDataset(bom.dataset);
+      persist({ ...read(), bom });
+    },
+    [persist],
+  );
+
+  const clearBom = useCallback(() => {
+    resetDataset();
+    persist({ ...read(), bom: null });
+  }, [persist]);
+
+  const reset = useCallback(() => {
+    resetDataset();
+    persist(EMPTY);
+  }, [persist]);
 
   return useMemo(
     () => ({
@@ -153,6 +185,9 @@ export function useWorkspaceState(): Workspace {
       approvals: state.approvals,
       assessments: state.assessments,
       hydrated,
+      bom: state.bom,
+      loadBom,
+      clearBom,
       addNotice,
       removeNotice,
       approve,
@@ -163,7 +198,7 @@ export function useWorkspaceState(): Workspace {
         state.assessments.find((a) => a.pcnId === pcnId)?.payload ?? null,
       reset,
     }),
-    [state, hydrated, addNotice, removeNotice, approve, saveAssessment, reset],
+    [state, hydrated, addNotice, removeNotice, approve, saveAssessment, reset, loadBom, clearBom],
   );
 }
 

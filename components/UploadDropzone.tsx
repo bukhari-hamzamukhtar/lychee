@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
+import { activeDataset } from "@/lib/graph";
 import { Button, Panel } from "./ui";
 import type { Pcn } from "@/lib/types";
 
@@ -55,7 +56,16 @@ export function UploadDropzone() {
         const res = await fetch("/api/ingest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name, mime: file.type || "application/pdf", data }),
+          body: JSON.stringify({
+            filename: file.name,
+            mime: file.type || "application/pdf",
+            data,
+            // The server has never seen an imported bill of materials, so the
+            // part list travels with the request.
+            knownParts: activeDataset()
+              .nodes.filter((n) => n.kind !== "product")
+              .map((n) => n.id),
+          }),
         });
         const json = await res.json();
         setStages(json.stages ?? []);
