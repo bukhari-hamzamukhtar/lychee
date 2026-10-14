@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
 import { Wordmark } from "./Logo";
@@ -29,7 +30,7 @@ const ASOF = new Date("2026-10-14T00:00:00Z");
 
 export function Nav() {
   const pathname = usePathname();
-  const { notices, approvals, hydrated } = useWorkspace();
+  const { notices, approvals, hydrated, upload } = useWorkspace();
 
   const soonest = hydrated
     ? notices
@@ -90,22 +91,56 @@ export function Nav() {
         </nav>
 
         <div className="ml-auto hidden shrink-0 items-center gap-2.5 lg:flex">
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              soonest !== undefined && soonest < 60 ? "animate-pulse-soft bg-accent" : "bg-ok"
-            }`}
-          />
-          <span className="text-[14px] text-dim">
-            {soonest !== undefined ? (
-              <>
-                next deadline <span className="tabular-nums text-fg">{soonest}d</span>
-              </>
-            ) : (
-              "all clear"
-            )}
-          </span>
+          {/* A document being read outranks the deadline: it is happening now,
+              and it is the reason someone might have left this page. */}
+          {upload.status === "running" ? (
+            <UploadTicker since={upload.startedAt} what={upload.current} />
+          ) : upload.status === "done" && upload.pcnId ? (
+            <Link
+              href={`/notices/${upload.pcnId}`}
+              className="flex items-center gap-2.5 text-[14px] text-dim transition-colors hover:text-fg"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-ok" />
+              document read
+            </Link>
+          ) : (
+            <>
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  soonest !== undefined && soonest < 60 ? "animate-pulse-soft bg-accent" : "bg-ok"
+                }`}
+              />
+              <span className="text-[14px] text-dim">
+                {soonest !== undefined ? (
+                  <>
+                    next deadline <span className="tabular-nums text-fg">{soonest}d</span>
+                  </>
+                ) : (
+                  "all clear"
+                )}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </header>
+  );
+}
+
+/** Live elapsed time for an upload running somewhere else in the app. */
+function UploadTicker({ since, what }: { since: number; what: string | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 200);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <Link href="/notices" className="flex items-center gap-2.5 text-[14px] transition-opacity hover:opacity-70">
+      <span className="h-3 w-3 animate-spin rounded-full border border-line border-t-accent" />
+      <span className="text-dim">
+        {what ?? "reading"}{" "}
+        <span className="tabular-nums text-fg">{((now - since) / 1000).toFixed(0)}s</span>
+      </span>
+    </Link>
   );
 }

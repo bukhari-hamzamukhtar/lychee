@@ -101,7 +101,7 @@ export function AssessPanel({
       </header>
 
       {error && (
-        <p className="animate-fade-in border-b border-line px-5 py-3 text-[12px] text-crit">
+        <p className="animate-fade-up border-b border-line px-5 py-3 text-[12px] text-crit">
           {error}
         </p>
       )}
@@ -130,7 +130,7 @@ export function AssessPanel({
                   </>
                 ) : (
                   <span className="flex items-center gap-1.5 text-dim">
-                    <span className="h-1 w-1 animate-pulse-ring rounded-full bg-accent" />
+                    <span className="h-1 w-1 animate-pulse-soft rounded-full bg-accent" />
                     queued
                   </span>
                 )}

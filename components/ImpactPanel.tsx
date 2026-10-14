@@ -46,7 +46,7 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
 
       <div className="space-y-6 px-5 py-5">
         {underwater && (
-          <div className="animate-fade-in border border-crit/50  px-3.5 py-3">
+          <div className="animate-fade-up border border-crit/50  px-3.5 py-3">
             <p className="text-[13px] text-crit">
               Already {r.coverGapWeeks} weeks exposed, deadline aside.
             </p>

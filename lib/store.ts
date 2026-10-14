@@ -10,10 +10,15 @@
  * The seeded notices are kept separate from uploaded ones: a user can delete
  * what they added without losing the worked examples the demo relies on.
  */
-import { createContext, useContext, useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PCN_INBOX } from "@/data/factory";
-import { setActiveDataset, resetDataset, type Dataset } from "./graph";
+import { setActiveDataset, resetDataset, activeDataset, type Dataset } from "./graph";
 import type { Pcn } from "./types";
+import {
+  ingestDocument,
+  type IngestStage,
+  type IngestTotals,
+} from "./ingest-client";
 
 const KEY = "lastbuy.workspace.v1";
 
@@ -76,6 +81,44 @@ function write(state: Persisted) {
   }
 }
 
+/**
+ * An upload in flight.
+ *
+ * This deliberately lives in the workspace rather than in the dropzone. Reading
+ * a document takes most of a minute, and state held by the component meant that
+ * walking to another tab threw the whole thing away — the request kept running
+ * with nowhere to report to. Here it outlives the page that started it.
+ *
+ * It is not written to localStorage: a reload kills the request anyway, and a
+ * stored "still reading" that can never finish is worse than no record.
+ */
+export interface UploadState {
+  status: "idle" | "running" | "done" | "error";
+  filename: string;
+  startedAt: number;
+  stages: IngestStage[];
+  /** The stage the server says it is working on right now. */
+  current: string | null;
+  error: string | null;
+  readText: string | null;
+  diagnosis: Record<string, unknown> | null;
+  totals: IngestTotals | null;
+  pcnId: string | null;
+}
+
+const NO_UPLOAD: UploadState = {
+  status: "idle",
+  filename: "",
+  startedAt: 0,
+  stages: [],
+  current: null,
+  error: null,
+  readText: null,
+  diagnosis: null,
+  totals: null,
+  pcnId: null,
+};
+
 interface Workspace {
   notices: Pcn[];
   uploaded: Pcn[];
@@ -91,6 +134,9 @@ interface Workspace {
   isApproved: (pcnId: string, partId: string) => boolean;
   saveAssessment: (pcnId: string, payload: unknown) => void;
   getAssessment: (pcnId: string) => unknown | null;
+  upload: UploadState;
+  startUpload: (file: File) => void;
+  clearUpload: () => void;
   reset: () => void;
 }
 
@@ -99,6 +145,9 @@ const Ctx = createContext<Workspace | null>(null);
 export function useWorkspaceState(): Workspace {
   const [state, setState] = useState<Persisted>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
+  const [upload, setUpload] = useState<UploadState>(NO_UPLOAD);
+  // Only one document at a time; starting another supersedes the first.
+  const inFlight = useRef<AbortController | null>(null);
 
   // Read after mount only: localStorage does not exist during the server render,
   // and reading it in an initialiser would produce a hydration mismatch.
@@ -173,6 +222,66 @@ export function useWorkspaceState(): Workspace {
     persist({ ...read(), bom: null });
   }, [persist]);
 
+  const startUpload = useCallback(
+    (file: File) => {
+      inFlight.current?.abort();
+      const controller = new AbortController();
+      inFlight.current = controller;
+
+      setUpload({
+        ...NO_UPLOAD,
+        status: "running",
+        filename: file.name,
+        startedAt: Date.now(),
+      });
+
+      const known = activeDataset()
+        .nodes.filter((n) => n.kind !== "product")
+        .map((n) => n.id);
+
+      void ingestDocument(
+        file,
+        known,
+        {
+          onBegin: (name) => setUpload((u) => ({ ...u, current: name })),
+          onStage: (stage) =>
+            setUpload((u) => ({ ...u, stages: [...u.stages, stage], current: null })),
+          onDone: (result) => {
+            // Persist the notice first, so the page it links to exists.
+            persist({ ...read(), uploaded: [result.pcn, ...read().uploaded] });
+            setUpload((u) => ({
+              ...u,
+              status: "done",
+              current: null,
+              stages: result.stages,
+              totals: result.totals,
+              pcnId: result.pcn.id,
+            }));
+          },
+          onError: (failure) =>
+            setUpload((u) => ({
+              ...u,
+              status: "error",
+              current: null,
+              stages: failure.stages.length ? failure.stages : u.stages,
+              totals: failure.totals ?? u.totals,
+              error: failure.error,
+              readText: failure.readText ?? null,
+              diagnosis: failure.diagnosis ?? null,
+            })),
+        },
+        controller.signal,
+      );
+    },
+    [persist],
+  );
+
+  const clearUpload = useCallback(() => {
+    inFlight.current?.abort();
+    inFlight.current = null;
+    setUpload(NO_UPLOAD);
+  }, []);
+
   const reset = useCallback(() => {
     resetDataset();
     persist(EMPTY);
@@ -196,9 +305,25 @@ export function useWorkspaceState(): Workspace {
       saveAssessment,
       getAssessment: (pcnId) =>
         state.assessments.find((a) => a.pcnId === pcnId)?.payload ?? null,
+      upload,
+      startUpload,
+      clearUpload,
       reset,
     }),
-    [state, hydrated, addNotice, removeNotice, approve, saveAssessment, reset, loadBom, clearBom],
+    [
+      state,
+      hydrated,
+      upload,
+      addNotice,
+      removeNotice,
+      approve,
+      saveAssessment,
+      reset,
+      loadBom,
+      clearBom,
+      startUpload,
+      clearUpload,
+    ],
   );
 }
 

@@ -61,7 +61,7 @@ export default function PartsPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search part number, description or supplier"
-          className="min-w-64 flex-1 border border-line bg-transparent px-3.5 py-2 text-[13px] outline-none transition-colors placeholder:text-dim focus:border-primary"
+          className="min-w-64 flex-1 border border-line bg-transparent px-3.5 py-2 text-[13px] outline-none transition-colors placeholder:text-dim focus:border-line-bright"
         />
         <div className="flex gap-1">
           {(
