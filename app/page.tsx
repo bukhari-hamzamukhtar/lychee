@@ -5,15 +5,21 @@ import { PCN_INBOX, SUPPLIERS } from "@/data/factory";
 import { impactOf, allPartsByRisk } from "@/lib/graph";
 import { PcnInbox } from "@/components/PcnInbox";
 import { ImpactPanel } from "@/components/ImpactPanel";
+import { AssessPanel, type AssessResult } from "@/components/AssessPanel";
 
+/** Fixed so the demo and the verification script agree on "days remaining". */
 const ASOF = new Date("2026-10-14T00:00:00Z");
 
 export default function Page() {
   const [selected, setSelected] = useState(PCN_INBOX[0].id);
+  const [results, setResults] = useState<Record<string, AssessResult>>({});
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const pcn = PCN_INBOX.find((p) => p.id === selected)!;
   const supplier = SUPPLIERS.find((s) => s.id === pcn.supplierId);
 
+  // The impact itself needs no network call; it is arithmetic over the graph.
   const reports = useMemo(
     () =>
       pcn.partIds
@@ -23,6 +29,30 @@ export default function Page() {
   );
 
   const risk = useMemo(() => allPartsByRisk().slice(0, 5), []);
+
+  async function assess() {
+    setRunning(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/assess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pcnId: pcn.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? `request failed (${res.status})`);
+      if (!data.memo?.trim()) {
+        throw new Error(
+          "The model returned no usable memo. The impact figures above are unaffected.",
+        );
+      }
+      setResults((r) => ({ ...r, [pcn.id]: data as AssessResult }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "unknown failure");
+    } finally {
+      setRunning(false);
+    }
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
@@ -36,7 +66,7 @@ export default function Page() {
 
         <section>
           <h2 className="mb-3 text-xs uppercase tracking-wide text-white/40">
-            Obsolescence risk, no notice yet
+            At risk, no notice yet
           </h2>
           <ul className="divide-y divide-edge rounded-lg border border-edge text-sm">
             {risk.map((r) => (
@@ -53,7 +83,8 @@ export default function Page() {
             ))}
           </ul>
           <p className="mt-2 text-xs text-white/30">
-            Scored from graph structure and supplier history, not from any announcement.
+            Scored from graph position and supplier history, before any announcement
+            arrives.
           </p>
         </section>
       </aside>
@@ -65,8 +96,8 @@ export default function Page() {
               <h2 className="font-mono text-sm">{pcn.id}</h2>
               <p className="mt-1 text-xs text-white/40">
                 {supplier?.name} &middot; received {pcn.receivedAt} &middot;{" "}
-                {pcn.type === "eol" ? "end of life" : "product change"} &middot; original
-                language {pcn.language.toUpperCase()}
+                {pcn.type === "eol" ? "end of life" : "product change"} &middot; arrived in{" "}
+                {pcn.language.toUpperCase()}
               </p>
             </div>
             <span className="shrink-0 rounded border border-edge px-2 py-1 text-xs text-white/50">
@@ -81,6 +112,13 @@ export default function Page() {
         {reports.map((r) => (
           <ImpactPanel key={r.partId} report={r} />
         ))}
+
+        <AssessPanel
+          result={results[pcn.id] ?? null}
+          running={running}
+          error={error}
+          onRun={assess}
+        />
       </div>
     </div>
   );

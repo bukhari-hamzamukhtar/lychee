@@ -119,7 +119,8 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
       <footer className="border-t border-edge px-4 py-3">
         <p className="text-xs text-white/30">
           Figures computed by graph traversal, not generated. The memo and the draft
-          emails are written by Gemma on AMD, and nothing is sent until a person approves.
+          emails are written by an open model on AMD, and nothing is sent until a person
+          approves.
         </p>
       </footer>
     </section>
