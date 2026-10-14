@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Nav } from "@/components/Nav";
 import { ThemeToggle, THEME_SCRIPT } from "@/components/ThemeToggle";
+import { Assistant } from "@/components/Assistant";
 import { Logo } from "@/components/Logo";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </footer>
           <ThemeToggle />
+          <Assistant />
         </Providers>
       </body>
     </html>
