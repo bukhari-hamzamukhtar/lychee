@@ -45,6 +45,23 @@ has built the thing that reads the incoming notice and tells you what breaks.
 LastBuy does. Drop in a notice and in about twenty seconds you get the full impact, the
 memo, and the drafted orders.
 
+THE APPLICATION
+
+Four screens. Notices is the inbox, with exposure across every open notice and a
+dropzone: drop in a PDF or a photo of one, in any language. Each notice has its own page
+with its impact, the agent run and the approval gate. Parts is the whole bill of
+materials, searchable, every component scored for obsolescence risk before any notice
+arrives. Approvals records what a person actually committed, with the authority level
+the procedure requires for the amount.
+
+Uploading is the part that makes it a product rather than a demo. MinerU2.5-Pro on AMD
+accepts a base64 data URI, so a file is read on AMD GPUs without being hosted anywhere
+first. Evolus pulls out the fields, an AMD-hosted model normalises them, and the part
+numbers are then reconciled against the real bill of materials — a document naming no
+component you build is rejected rather than assessed, because an impact report for a
+part you do not make is worse than none. About seventeen seconds, two Evolus credits,
+six hundredths of a cent.
+
 HOW IT WORKS
 
 The notice arrives in the supplier's language. Evolus `translate` puts it into English
