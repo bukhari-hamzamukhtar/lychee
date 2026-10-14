@@ -24,6 +24,29 @@ export interface AssessResult {
   model: string;
 }
 
+/**
+ * The agent writes light markdown. Rendering it raw puts literal asterisks on
+ * screen, so bold spans are turned into real emphasis and nothing else is
+ * interpreted — the text is model output and should not be able to inject
+ * markup of its own.
+ */
+function RichText({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.startsWith("**") && p.endsWith("**") && p.length > 4 ? (
+          <strong key={i} className="font-semibold text-white">
+            {p.slice(2, -2)}
+          </strong>
+        ) : (
+          <span key={i}>{p}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 const PROVIDER = {
   evolus: { label: "Evolus", cls: "border-sky-400/40 text-sky-300" },
   amd: { label: "AMD", cls: "border-accent/50 text-accent" },
@@ -130,7 +153,7 @@ export function AssessPanel({
               Memo for the procurement lead
             </h3>
             <p className="whitespace-pre-wrap rounded border border-edge/70 px-3 py-3 text-sm leading-relaxed">
-              {result.memo}
+              <RichText text={result.memo} />
             </p>
             <p className="mt-1.5 text-[11px] text-white/25">
               Written from figures the engine supplied. The model is not permitted to
@@ -144,7 +167,7 @@ export function AssessPanel({
                 Certification ruling &middot; Evolus agent
               </h3>
               <p className="whitespace-pre-wrap rounded border border-sky-400/25 bg-sky-400/5 px-3 py-3 text-sm leading-relaxed">
-                {result.certificationRuling}
+                <RichText text={result.certificationRuling} />
               </p>
               <p className="mt-1.5 text-[11px] text-white/25">
                 Answered by the workspace agent from the approval records and QP-014,
