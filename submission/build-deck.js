@@ -19,18 +19,18 @@ const THEME = {
   headFontFace: "Cambria",
   bodyFontFace: "Arial",
   colors: {
-    dk1: "E6E9EF", // text1  — light, because the deck is dark
-    lt1: "0F1115", // background1
-    dk2: "9AA3B2", // text2  — muted
-    lt2: "161A21", // background2 — card panels
-    accent1: "F0B429", // amber, the product accent
-    accent2: "F0616D", // critical red
-    accent3: "3DD68C", // confirmed green
-    accent4: "5AA9E6", // Evolus blue
-    accent5: "242A35", // hairline edge
-    accent6: "6B7280",
-    hlink: "F0B429",
-    folHlink: "9AA3B2",
+    dk1: "E2E8F0", // text1 — light, because the deck is dark
+    lt1: "0B1120", // background1
+    dk2: "94A3B8", // text2 — muted
+    lt2: "0F172A", // background2 — card panels
+    accent1: "6366F1", // indigo, lablab's primary and ours
+    accent2: "EF4444", // critical
+    accent3: "10B981", // confirmed
+    accent4: "A5B4FC", // soft indigo, for Evolus labels
+    accent5: "1E293B", // hairline
+    accent6: "64748B",
+    hlink: "6366F1",
+    folHlink: "94A3B8",
   },
 };
 
@@ -241,7 +241,7 @@ pres.addSection({ title: "How" });
   const steps = [
     ["Evolus", "translate + doc-structure", "the notice, in any language", THEME.colors.accent4],
     ["Engine", "propagate through the BOM", "exact arithmetic, no model", THEME.colors.accent1],
-    ["AMD", "write the impact memo", "open model on AMD GPUs", THEME.colors.accent1],
+    ["AMD", "write the impact memo", "open model on AMD GPUs", THEME.colors.accent2],
     ["Evolus", "agent rules on certification", "cites the clause", THEME.colors.accent4],
     ["Evolus", "draft order + customer notice", "nothing is sent", THEME.colors.accent4],
   ];
@@ -374,7 +374,7 @@ pres.addSection({ title: "Product" });
   s.addText("Every figure traceable, on one screen", { placeholder: "title" });
 
   s.addImage({
-    path: path.join(SHOTS, "01-impact.jpg"),
+    path: path.join(SHOTS, "02-impact.jpg"),
     x: M, y: 1.65, w: 7.4, h: 4.67,
     objectName: "impact-screenshot",
   });
@@ -446,6 +446,38 @@ pres.addSection({ title: "Product" });
     { isTextBox: true, x: M, y: 6.45, w: W - M * 2, h: 0.5, fontSize: 15 },
   );
   s.addNotes("Memo and both drafts run concurrently, so wall clock is under the sum.");
+}
+
+// 9 — the upload, which is what makes it a product rather than a demo
+{
+  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
+  s.addText("Drop in a notice you have never seen", { placeholder: "title" });
+
+  s.addImage({
+    path: path.join(SHOTS, "01-inbox.jpg"),
+    x: M, y: 1.65, w: 7.4, h: 4.67,
+    objectName: "inbox-screenshot",
+  });
+
+  const notes = [
+    ["MinerU, on AMD GPUs", "A PDF or a photo of one, in any language. It takes a base64 data URI, so nothing has to be hosted first."],
+    ["Reconciled, not trusted", "Part numbers are matched against the real BOM. A notice naming nothing you build is rejected, not assessed."],
+    ["17 seconds, $0.00006", "Plus about two Evolus credits. Cheap enough to run on every notice that arrives."],
+  ];
+  let y = 1.8;
+  notes.forEach(([h, b], i) => {
+    card(s, { x: 8.35, y, w: W - 8.35 - M, h: 1.42, name: `up-${i}` });
+    s.addText(h, {
+      isTextBox: true, x: 8.6, y: y + 0.2, w: W - 8.35 - M - 0.5, h: 0.32,
+      fontSize: 14, bold: true, color: THEME.colors.accent1, margin: 0,
+    });
+    s.addText(b, {
+      isTextBox: true, x: 8.6, y: y + 0.56, w: W - 8.35 - M - 0.5, h: 0.8,
+      fontSize: 11.5, color: THEME.colors.dk2, margin: 0, lineSpacingMultiple: 1.2,
+    });
+    y += 1.58;
+  });
+  s.addNotes("This is the difference between a dashboard and a product you can put work into.");
 }
 
 pres.addSection({ title: "Case" });
