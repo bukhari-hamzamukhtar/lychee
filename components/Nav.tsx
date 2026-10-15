@@ -28,7 +28,7 @@ const TABS = [
 
 export function Nav() {
   const pathname = usePathname();
-  const { notices, approvals, hydrated, upload } = useWorkspace();
+  const { notices, approvals, hydrated, upload, account, signedIn, signOut } = useWorkspace();
 
   const count = (href: string) =>
     href === "/notices" ? notices.length : href === "/approvals" ? approvals.length : null;
@@ -94,6 +94,23 @@ export function Nav() {
             >
               <span className="h-1.5 w-1.5 rounded-full bg-ok" />
               document read
+            </Link>
+          ) : hydrated && signedIn ? (
+            <div className="flex items-center gap-3.5">
+              <span className="text-[13.5px] text-dim">{account?.name}</span>
+              <button
+                onClick={signOut}
+                className="text-[13.5px] text-dim transition-colors hover:text-fg"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : hydrated ? (
+            <Link
+              href="/sign-in"
+              className="text-[13.5px] text-dim transition-colors hover:text-fg"
+            >
+              Sign in
             </Link>
           ) : null}
         </div>

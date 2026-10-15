@@ -22,13 +22,22 @@ import {
 import type { Pcn } from "./types";
 import type { Assertion, Source } from "./context-graph";
 import { newChat, forkOf, titleFrom, type Chat, type Turn } from "./chats";
+import { currentAccount, rememberSession, forgetSession, GUEST, type Account } from "./auth";
 import {
   ingestDocument,
   type IngestStage,
   type IngestTotals,
 } from "./ingest-client";
 
+/**
+ * One workspace per account.
+ *
+ * Keyed rather than global so two people on the same laptop do not read each
+ * other's bills of materials. The old unkeyed value is still read once, so a
+ * workspace built before accounts existed is not thrown away.
+ */
 const KEY = "lastbuy.workspace.v1";
+const keyFor = (accountId: string) => `${KEY}:${accountId}`;
 
 export interface Approval {
   id: string;
@@ -107,10 +116,16 @@ function applyDataset(state: Persisted) {
   else resetDataset();
 }
 
+/** Whose workspace the module-level read and write functions act on. */
+let scope: string = GUEST.id;
+
 function read(): Persisted {
   if (typeof window === "undefined") return EMPTY;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw =
+      window.localStorage.getItem(keyFor(scope)) ??
+      // Anything saved before this app had accounts belongs to whoever is first.
+      (scope === GUEST.id ? window.localStorage.getItem(KEY) : null);
     if (!raw) return EMPTY;
     const parsed = JSON.parse(raw) as Partial<Persisted>;
     return {
@@ -131,7 +146,7 @@ function read(): Persisted {
 
 function write(state: Persisted) {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(state));
+    window.localStorage.setItem(keyFor(scope), JSON.stringify(state));
   } catch {
     /* private mode, quota, blocked storage — the session still works in memory */
   }
@@ -176,6 +191,11 @@ const NO_UPLOAD: UploadState = {
 };
 
 interface Workspace {
+  /** Who this workspace belongs to. Null until the session has been read. */
+  account: Account | null;
+  signedIn: boolean;
+  adopt: (account: Account) => void;
+  signOut: () => void;
   notices: Pcn[];
   uploaded: Pcn[];
   demo: boolean;
@@ -222,12 +242,17 @@ export function useWorkspaceState(): Workspace {
   const [state, setState] = useState<Persisted>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
   const [upload, setUpload] = useState<UploadState>(NO_UPLOAD);
+  const [account, setAccount] = useState<Account | null>(null);
   // Only one document at a time; starting another supersedes the first.
   const inFlight = useRef<AbortController | null>(null);
 
   // Read after mount only: localStorage does not exist during the server render,
   // and reading it in an initialiser would produce a hydration mismatch.
   useEffect(() => {
+    // The session decides which workspace to read, so it is resolved first.
+    const who = currentAccount() ?? GUEST;
+    scope = who.id;
+    setAccount(who);
     const stored = read();
     // The engine is a module singleton, so whichever bill of materials this
     // workspace is on has to be put back before anything renders against it.
@@ -423,6 +448,26 @@ export function useWorkspaceState(): Workspace {
     patchChat(cur.activeChatId, (c) => ({ ...c, turns: [], assertions: [] }));
   }, [patchChat]);
 
+  /** Switch to this account's workspace. Used by both signing in and signing up. */
+  const adopt = useCallback((next: Account) => {
+    scope = next.id;
+    rememberSession(next.id);
+    setAccount(next);
+    const stored = read();
+    applyDataset(stored);
+    setState(stored);
+  }, []);
+
+  const signOut = useCallback(() => {
+    forgetSession();
+    scope = GUEST.id;
+    setAccount(GUEST);
+    const stored = read();
+    applyDataset(stored);
+    setState(stored);
+    setUpload(NO_UPLOAD);
+  }, []);
+
   const startUpload = useCallback(
     (file: File) => {
       inFlight.current?.abort();
@@ -488,6 +533,10 @@ export function useWorkspaceState(): Workspace {
   return useMemo(
     () => ({
       // Only what this user actually added, unless the example is switched on.
+      account,
+      signedIn: account !== null && account.id !== GUEST.id,
+      adopt,
+      signOut,
       notices: state.demo ? [...state.uploaded, ...PCN_INBOX] : state.uploaded,
       uploaded: state.uploaded,
       demo: state.demo,
@@ -534,6 +583,9 @@ export function useWorkspaceState(): Workspace {
       state,
       hydrated,
       upload,
+      account,
+      adopt,
+      signOut,
       addNotice,
       removeNotice,
       approve,
