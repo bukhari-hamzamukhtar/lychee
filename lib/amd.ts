@@ -12,6 +12,23 @@ const base = () => process.env.AMD_BASE_URL ?? "https://developer.amd.com.cn/rad
 const key = () => process.env.AMD_API_KEY ?? "";
 
 /**
+ * Generation and OCR can be served from different places.
+ *
+ * Token Factory is AMD's own hosted inference and serves both. An open model
+ * you serve yourself on an AMD Developer Cloud droplet serves only what you
+ * started it with, and MinerU is not something vLLM will give you — so OCR
+ * stays on Token Factory while generation can be pointed at your own endpoint
+ * by setting AMD_GENERATE_BASE_URL. Unset, everything behaves exactly as before.
+ *
+ * This is also the escape hatch if a self-hosted droplet dies mid-demo: unset
+ * one variable and generation falls back to Token Factory with no code change.
+ */
+const genBase = () => process.env.AMD_GENERATE_BASE_URL?.replace(/\/+$/, "") || base();
+const genKey = () => process.env.AMD_GENERATE_API_KEY ?? key();
+/** True when generation is being served from something other than Token Factory. */
+export const selfHostedGeneration = () => Boolean(process.env.AMD_GENERATE_BASE_URL);
+
+/**
  * Which hosted model does what.
  *
  * `generate` is deliberately configuration rather than a hardcoded choice.
@@ -59,8 +76,15 @@ function acceptsReasoningEffort(model: string) {
   return model.startsWith("DeepSeek") || model.startsWith("GLM") || model.startsWith("Qwen");
 }
 
-async function post(path: string, body: unknown, timeoutMs: number) {
-  if (!key()) throw new AmdError("AMD_API_KEY is not set", 401);
+type Target = "generate" | "ocr";
+
+async function post(path: string, body: unknown, timeoutMs: number, target: Target = "generate") {
+  const url = target === "ocr" ? base() : genBase();
+  const token = target === "ocr" ? key() : genKey();
+  // A self-hosted vLLM may legitimately be served without a key.
+  if (!token && !(target === "generate" && selfHostedGeneration())) {
+    throw new AmdError("AMD_API_KEY is not set", 401);
+  }
 
   const MAX_TRIES = 4;
   let lastErr: AmdError | null = null;
@@ -69,9 +93,12 @@ async function post(path: string, body: unknown, timeoutMs: number) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeoutMs);
     try {
-      const res = await fetch(`${base()}${path}`, {
+      const res = await fetch(`${url}${path}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json" },
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(body),
         signal: ctl.signal,
       });
@@ -220,6 +247,9 @@ export async function ocr(documentUrl: string, pages?: string) {
       ...(pages ? { pages } : {}),
     },
     300_000,
+    // MinerU lives on Token Factory. A droplet you started yourself serves the
+    // one model you asked for, and that is not this one.
+    "ocr",
   );
   return {
     markdown: (data?.pages ?? []).map((p: { markdown?: string }) => p.markdown ?? "").join("\n\n"),
