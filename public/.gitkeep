@@ -1,0 +1,3 @@
+Next.js serves this directory at the site root. It is kept in the repository
+even when empty because the Docker build copies it, and a missing directory
+fails that build rather than producing an image without static files.

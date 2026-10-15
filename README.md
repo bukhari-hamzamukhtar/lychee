@@ -6,90 +6,130 @@ certifications re-open, how many weeks of stock remain, and how many to buy befo
 door closes. Today that takes days, across several people, in spreadsheets. Miss the
 date and the part can never be bought again.
 
-LastBuy reads the notice and answers all of it in about twenty seconds.
+LastBuy reads the notice and answers all of it in about half a minute.
 
 Built for the **AMD Developer Hackathon: ACT III** — Intelligent Industry, and the
 **Evolus Business Agents** partner track.
 
+Live: <https://lychee-seven.vercel.app>
+
 ## The application
 
-Three screens, not one page.
+The workspace **starts empty**. It holds nothing until you load a bill of materials or
+upload a notice, because a tool that opens showing three supplier letters and a
+countdown is making a claim about what you have received, and it is wrong. The worked
+example lives on the landing page, and loading it into the workspace is a deliberate
+click that carries a banner on every screen saying none of it was sent to you.
 
 | | |
 |---|---|
-| **Notices** | The inbox, with portfolio figures across every open notice, and a dropzone. Drop in a PDF or a photo of one, in any language. |
+| **Notices** | The inbox and the dropzone. Drop in a PDF or a photo of one, in any language. |
 | `/notices/[id]` | One notice: its impact, the agent run, the memo, the certification ruling, the drafts, and the approval gate. A run is saved, so revisiting does not re-bill it. |
-| **Parts** | The whole bill of materials, searchable, every component scored for obsolescence risk *before* a notice arrives. A part page shows what drives its score, every route by which it reaches a product, and what a discontinuation would cost. |
+| **Parts** | Every component, scored for obsolescence risk *before* a notice arrives. A part page shows what drives its score, every route by which it reaches a product, and what a discontinuation would cost. |
+| **Products** | What each line is built from, and the risk it inherits from its most exposed component. |
+| **Suppliers** | Who supplies what, ranked by how often they have discontinued parts before. |
+| **Certifications** | Which certificates depend on which components, and what a change forces you to re-test. |
 | **Approvals** | What a person has actually committed, with the authority level QP-014 requires for the amount. |
+| **Bill of materials** | Import your own, as a CSV from any PLM or ERP. Columns are inferred by meaning and you correct the guess before anything loads. |
+| **Ask** | The agent, with the whole workspace in front of it. Drop in as many documents as you like and ask across all of them at once. |
 
-Uploaded notices, saved assessments and approvals persist in the browser, so the
-workspace survives a reload.
+Uploaded notices, imported bills of materials, saved assessments, approvals and
+conversations persist in the browser, so the workspace survives a reload. Accounts keep
+one person's workspace separate from another's on the same machine — in this browser
+only; `lib/auth.ts` says so plainly and so does the sign-in page.
 
-### Uploading a real notice
+### Bringing your own bill of materials
+
+There is no public corpus of real manufacturing bills of materials, because they are the
+most commercially sensitive thing a manufacturer owns. That absence *is* the answer: the
+BOM is the customer's data, which is why every tool in this category takes an upload.
+
+So `lib/bom-import.ts` reads a CSV as exported and infers what each column means from its
+header — `MPN`, `Manufacturer Part Number` and `Part No` all land in the same place. A
+flat export becomes one product; a parent column is honoured as a hierarchy. The inferred
+mapping is shown and can be corrected before anything loads, and every screen then
+computes from it.
+
+### Uploading a notice
 
 `MinerU2.5-Pro` accepts a base64 data URI, so a file is read on AMD GPUs without being
-hosted anywhere first. Evolus `doc-structure` pulls out the fields, an AMD-hosted model
-normalises them, and the part numbers are then matched against the real bill of
-materials — a document naming no component you build is **rejected**, not assessed,
-because an impact report for a part you do not make is worse than none.
+hosted anywhere first. Then the deterministic readers run, and **a model is only asked
+for what the document did not say plainly.**
 
-A complete ingest runs in about 17 seconds for roughly 2 Evolus credits and
-$0.00006 of AMD inference.
+That ordering is the point. A supplier notice is a form: it states its category in a
+ticked box, prints its last-time-buy date beside a label, and lists its part numbers.
+JEDEC standardises the layout in JESD46. `lib/notice-read.ts` reads all of that directly,
+and only when something is genuinely missing — no date, no ticked category and no heading
+to go on, or no part number in a recognisable form — does the request go on to Evolus
+`doc-structure` and an AMD-hosted model.
+
+On a real 488 KB scanned PCN the difference is 161 seconds against 27:
+
+| | model always | readers first |
+|---|---|---|
+| OCR | 42s | 27s |
+| Evolus extraction | 17s | skipped |
+| model normalisation | 103s | skipped |
+| **total** | **161s** | **27s** |
+| cost | 10.4 credits + $0.00026 | nothing |
+
+Vercel stops a function at 60 seconds, so the first column did not merely cost money, it
+failed outright.
+
+The part numbers are matched against the real bill of materials last. A document naming
+no component you build is **rejected**, not assessed, because an impact report for a part
+you do not make is worse than none.
+
+Progress is streamed as NDJSON — each stage announces itself when it starts and again
+when it finishes — because a request that returns nothing for half a minute is
+indistinguishable from one that has died. The upload belongs to the workspace rather than
+to the page, so leaving the tab does not cancel it.
 
 ## How it works
 
-```
-supplier notice (PDF, often German / Japanese / Chinese)
-   |
-   |-- Evolus `translate` ..................... into English
-   |-- Evolus `doc-structure` ................. part numbers, dates, replacement
-   v
-GRAPH ENGINE  -- exact, auditable, no language model
-   part -> module -> board -> product -> customer
-                        |
-                        +-> certification, stock runway, last-buy quantity
-   |
-   |-- AMD-hosted model ....................... writes the impact memo
-   |-- Evolus agent on the AMD model .......... rules on certification impact,
-   |                                            citing the clause
-   |-- Evolus `email` x2 ...................... drafts the PO and the customer notice
-   v
-HUMAN APPROVES, then it sends
-```
+Impact is a **graph traversal, not a generation**. `lib/graph.ts` walks the bill of
+materials from a component up to every finished product that contains it, multiplying
+quantities along the way, and the numbers on screen are that arithmetic. Nothing a model
+said is ever presented as a computed figure.
 
-**Why the engine contains no LLM.** Propagating a change through a multi-level bill of
-materials is exact arithmetic over a directed graph. Ask a language model to do it and it
-invents quantities. So the split is honest: the graph decides *what is affected* and
-shows every path it used, and the model does what it is good at — reading a notice in a
-language you do not speak, ruling on a standard, and writing the memo.
+Models are used for the things models are good at: reading a scanned document in a
+language you do not speak, and writing the memo a procurement lead has to sign.
 
-The model is never asked for a number. Figures are handed to it as established facts,
-and it is instructed that it may not introduce one of its own.
+## Ask, and what the agent remembers
 
-## Worked example
+Conversations are separate and their memory does not leak between them. Documents are
+shared, because they are files you added rather than something one conversation
+discovered.
 
-`ADUM1201ARZ`, a dual-channel digital isolator, discontinued with 34 days' notice:
+A context gauge shows what the agent is actually being given, split by where it came
+from. When the window fills, the conversation is **not summarised**. It is distilled into
+assertions — each with a subject, a claim, how it is known (read from a document,
+computed by the engine, or inferred), and which document or computation it came from —
+and the transcript is then discarded. A paragraph saying "we discussed the Hittite
+notice" cannot be checked, contradicted by new evidence, or attached to a part. An
+assertion can be all three.
 
-| | |
-|---|---|
-| Reaches | 5 products, through 3 assemblies, by 7 distinct BOM paths |
-| Quantity | 7 per MD-3000, 13 per MD-7500, 6 per PSU-240 |
-| Consumption | 3,024.5 pcs/week |
-| Stock runway | **4.7 weeks**, against a 26-week lead time |
-| Last buy | 504,798 pcs, EUR 1,433,626 |
-| Revenue at risk | EUR 9,058,546 / year |
-| Certifications re-opened | EN 61800-3 §6.3.2, UL 61800-5-1 §4.4 |
+**Forking** is the deliberate way to carry memory across: the parent's transcript is
+distilled, the claims go to the child, and the child starts with an empty window.
 
-The runway figure is the one that matters: the company is already 21 weeks short, and
-nothing in their current process would have told them.
+Grounded answers must cite. A claim read from a document ends with the filename; a figure
+computed from the bill of materials ends with `[engine]`; and the model is told never to
+present one as the other.
 
-A full run costs about **9 Evolus credits** and **$0.00012** of AMD inference.
+The idea is from a dissertation on neurosymbolic knowledge graphs: an edge is a
+connector, a node is an event, and provenance is part of the data rather than a note
+about it.
 
 ## AMD
 
 Everything the models do runs on AMD Token Factory, free OpenAI-compatible endpoints
 served on AMD GPUs. The Evolus workspace is pinned to that same endpoint as its own
 model, so the agent's answers are generated on AMD too, not on a model Evolus chose.
+
+| | |
+|---|---|
+| `MinerU2.5-Pro` | OCR. Takes a data URI, returns Markdown per page. |
+| `DeepSeek-V4-Flash` | Normalisation, memos, drafts, the agent, and distillation. |
 
 A note on model choice: `Gemma-4-31B-IT` would be the preferred generator, and the code
 switches to it with one environment variable. On 14 October 2026 it collapses into
@@ -123,6 +163,13 @@ Verify the engine's arithmetic against hand calculations:
 npx tsx scripts/verify.ts
 ```
 
+Check the document readers against the real PCN and the date formats manufacturers
+actually use — 21 assertions, no network, no spend:
+
+```bash
+npx tsx scripts/probe-notice-read.ts
+```
+
 Check the agent cites and declines correctly:
 
 ```bash
@@ -142,7 +189,11 @@ See `.env.example`. No key is committed; `.env.local` is gitignored.
 
 ## Data
 
-`data/factory.ts` is synthetic, modelled on a mid-size Italian drives manufacturer.
-Part numbers follow real manufacturer conventions. No customer or supplier data is real,
-and the standards documents in `data/library/` are written for this demo rather than
-reproduced from the published standards.
+`data/factory.ts` is the example factory: synthetic, modelled on a mid-size Italian
+drives manufacturer, and never loaded unless asked for. Part numbers follow real
+manufacturer conventions. No customer or supplier data is real, and the standards
+documents in `data/library/` are written for this demo rather than reproduced from the
+published standards.
+
+The document the pipeline is tested against is real: Hittite Microwave **PCN140002**, a
+2014 plating-vendor change notice.

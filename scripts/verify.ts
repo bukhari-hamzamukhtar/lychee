@@ -1,5 +1,17 @@
 /** Sanity-check the impact engine by hand-checkable arithmetic. */
-import { impactOf, qtyPerProduct, pathsToProducts, allPartsByRisk, rolledUpCost } from "../lib/graph";
+import {
+  impactOf,
+  qtyPerProduct,
+  pathsToProducts,
+  allPartsByRisk,
+  rolledUpCost,
+  loadDemoDataset,
+} from "../lib/graph";
+
+// The engine starts with nothing loaded, because the app does. Outside the
+// browser there is no workspace to put a bill of materials there, so this
+// script says which one it is checking.
+loadDemoDataset();
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
 

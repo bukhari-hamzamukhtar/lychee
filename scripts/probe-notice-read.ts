@@ -5,9 +5,14 @@
  * from the PDF, so a pass here is a pass on a document nobody wrote for us.
  */
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { lastBuyDate, classify, labelled, tickedBoxes, dateIn } from "../lib/notice-read";
 
-const real = JSON.parse(readFileSync(process.argv[2], "utf8")).pcn.rawText as string;
+// The real OCR output, checked in, so this runs offline and costs nothing.
+const real = readFileSync(join(__dirname, "fixtures", "hittite-pcn140002.txt"), "utf8")
+  .split(/\r?\n/)
+  .filter((l) => !l.startsWith("#"))
+  .join("\n");
 
 let failures = 0;
 const is = (label: string, got: unknown, want: unknown) => {

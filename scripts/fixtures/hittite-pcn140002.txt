@@ -1,0 +1,62 @@
+# OCR output of Hittite Microwave PCN140002, as MinerU2.5-Pro on AMD read it.
+# Kept verbatim so the document readers can be checked without a network call
+# or a cent of spend. Regenerate by uploading the PDF and copying pcn.rawText.
+Product Change Notification
+
+PCN Number: PCN140002
+
+PCN Date: 01/17/14
+
+Product Change Notification Form
+
+Affected Part:
+
+All parts utilizing the MS, QS, SOT, SOIC package, part numbers attached
+
+Description of Change: Sn/Pb plating vendor change
+
+Product Change Category: Process [X] Form [] Fit [] Function []
+
+Reliability [ ] Obsolete [ ]
+
+Reason for Change: Changing Sn/Pb plating vendor
+
+Anticipated Impact on Form, Fit, Function, Quality Or Reliability:
+
+No impact is anticipated by Hittite Microwave Corporation.
+
+Means of Distinguishing Changed Product:
+
+The replacement is identified by Product Lot Code > UB01
+
+Milestone Dates:
+
+Qualification Samples Available 2/1/2014
+
+Qualification Data Available 2/1/2014
+
+Shipment of Changed Product Contact Factory
+
+Last-Time Buy for Unchanged Product 2/1/2014
+
+Last-Time Delivery for Unchanged Product 03/28/2014
+
+Shipments after 3/28/14 may be from the original plating vendor until stock is depleted.
+
+Hittite Microwave Corporation, 20 Alpha Road Chelmsford, MA 01824
+
+pcn@hittite.com 125603 REV C ECN CP131214
+
+HMC149S14 HMC174MS8 HMC175MS8 HMC182S14 HMC183QS24 HMC187AMS8  
+HMC187MS8 HMC188MS8 HMC189AMS8 HMC189MS8 HMC190AMS8 HMC194MS8  
+HMC197A HMC199MS8 HMC204MS8G HMC207AS8 HMC207S8 HMC208AMS8  
+HMC208MS8 HMC213AMS8 HMC213MS8 HMC214MS8 HMC2161MS8G HMC216MS8  
+HMC218MS8 HMC219AMS8 HMC219MS8 HMC220AMS8 HMC220MS8 HMC221A  
+HMC223MS8 HMC224MS8 HMC230MS8 HMC2345S8 HMC241QS16 HMC245QS16  
+HMC252QS24 HMC253QS24 HMC270MS8G HMC272AMS8 HMC273MS10G HMC274QS16  
+HMC284AMS8G HMC284MS8G HMC286 HMC2866MS8G HMC287MS8 HMC291  
+HMC2920MS8 HMC304MS8 HMC3064S14 HMC306MS10 HMC308 HMC311SC70  
+HMC311ST89 HMC313 HMC316MS8 HMC318MS8G HMC320MS8G HMC326MS8G  
+HMC327MS8G HMC336MS8G HMC346MS8G
+
+Part List
