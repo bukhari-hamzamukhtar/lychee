@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { pathsToProducts, qtyPerProduct, node } from "@/lib/graph";
+import { pathsToProducts, qtyPerProduct, node, withDataset, type Dataset } from "@/lib/graph";
 
 /**
  * The bill of materials, drawn, with the change propagating through it.
@@ -37,7 +37,10 @@ const PAD_Y = 28;
 
 function layout(partId: string) {
   const paths = pathsToProducts(partId);
-  if (paths.length === 0) return null;
+  // A part that reaches nothing — or that is not in the loaded bill of materials
+  // at all — comes back as a single hop to itself. One lone box is not a
+  // propagation diagram, so there is nothing worth drawing.
+  if (paths.length === 0 || paths.every((p) => p.length < 2)) return null;
 
   // Deepest column wins, so edges always run left to right.
   const col = new Map<string, number>();
@@ -108,13 +111,19 @@ export function PropagationGraph({
   autoPlay = true,
   loop = false,
   className = "",
+  dataset,
 }: {
   partId: string;
   autoPlay?: boolean;
   loop?: boolean;
   className?: string;
+  /** Draw against this bill of materials instead of the loaded one. */
+  dataset?: Dataset;
 }) {
-  const data = useMemo(() => layout(partId), [partId]);
+  const data = useMemo(
+    () => (dataset ? withDataset(dataset, () => layout(partId)) : layout(partId)),
+    [partId, dataset],
+  );
   const [step, setStep] = useState(autoPlay ? -1 : 99);
   const host = useRef<HTMLDivElement>(null);
 

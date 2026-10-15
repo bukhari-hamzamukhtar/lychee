@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PropagationGraph } from "@/components/PropagationGraph";
+import { DEMO_DATASET } from "@/lib/graph";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/CountUp";
 import { Button, Eyebrow } from "@/components/ui";
@@ -99,7 +100,7 @@ export default function Landing() {
             </div>
             <div className="mt-7 overflow-x-auto pb-2">
               <div className="min-w-[760px]">
-                <PropagationGraph partId="ADUM1201ARZ" loop />
+                <PropagationGraph partId="ADUM1201ARZ" loop dataset={DEMO_DATASET} />
               </div>
             </div>
           </Reveal>

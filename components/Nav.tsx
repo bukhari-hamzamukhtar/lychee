@@ -40,7 +40,7 @@ export function Nav() {
           <Wordmark />
         </Link>
 
-        <nav className="ml-14 hidden items-center gap-9 lg:flex">
+        <nav className="ml-10 hidden items-center gap-7 xl:flex">
           {TABS.map((t) => {
             const active = pathname.startsWith(t.href);
             const n = hydrated ? count(t.href) : null;
@@ -48,7 +48,7 @@ export function Nav() {
               <Link
                 key={t.href}
                 href={t.href}
-                className={`group relative flex h-16 items-center gap-1.5 text-[15px] transition-colors duration-200 ${
+                className={`group relative flex h-16 shrink-0 items-center gap-1.5 whitespace-nowrap text-[15px] transition-colors duration-200 ${
                   active ? "text-fg" : "text-dim hover:text-fg"
                 }`}
               >
@@ -66,7 +66,7 @@ export function Nav() {
           })}
         </nav>
 
-        <nav className="ml-8 flex items-center gap-6 overflow-x-auto lg:hidden">
+        <nav className="ml-8 flex items-center gap-6 overflow-x-auto xl:hidden">
           {TABS.map((t) => (
             <Link
               key={t.href}
@@ -80,7 +80,7 @@ export function Nav() {
           ))}
         </nav>
 
-        <div className="ml-auto hidden shrink-0 items-center gap-2.5 lg:flex">
+        <div className="ml-auto hidden shrink-0 items-center gap-2.5 pl-6 lg:flex">
           {/* Only ever says something when something is actually happening.
               A standing countdown here was announcing a deadline to people who
               had not uploaded anything, which reads as the app inventing work

@@ -115,6 +115,29 @@ export function activeDataset(): Dataset {
   return active;
 }
 
+/**
+ * Run something against a different bill of materials, then put it back.
+ *
+ * The landing page draws the example factory whatever the visitor has loaded,
+ * because it is an illustration of the product rather than a view of their
+ * data. Everything here reads one module-level dataset, so the honest way to
+ * ask it a question about another one is to swap, ask, and restore.
+ *
+ * Synchronous on purpose: nothing may await inside, or two callers would see
+ * each other's dataset.
+ */
+export function withDataset<T>(ds: Dataset, fn: () => T): T {
+  const previous = active;
+  active = ds;
+  rebuild();
+  try {
+    return fn();
+  } finally {
+    active = previous;
+    rebuild();
+  }
+}
+
 export function node(id: string): BomNode | undefined {
   return byId.get(id);
 }
