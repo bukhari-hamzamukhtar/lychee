@@ -1,5 +1,20 @@
 /**
- * AMD Token Factory client. OpenAI-compatible endpoints served on AMD GPUs.
+ * ============================================================================
+ *  EVERY MODEL CALL IN THIS APPLICATION GOES THROUGH THIS FILE.
+ *
+ *  Endpoint:  https://developer.amd.com.cn/radeon/api/v1     (AMD Token Factory)
+ *  Hardware:  AMD Instinct GPUs
+ *  Models:    MinerU2.5-Pro (OCR), DeepSeek-V4-Flash (generation)
+ *
+ *  There is no other inference provider anywhere in the codebase. Nothing is
+ *  called on OpenAI, Anthropic, or any hosted API other than the AMD endpoint
+ *  above and Evolus — and the Evolus agent is itself bound to that same AMD
+ *  endpoint as a custom model, so its answers are generated on AMD too.
+ *
+ *  The two functions at the bottom of this file are the only ways out:
+ *    ocr()   -> POST https://developer.amd.com.cn/radeon/api/v1/ocr
+ *    chat()  -> POST https://developer.amd.com.cn/radeon/api/v1/chat/completions
+ * ============================================================================
  *
  * Server-side only — the key is a shared team credential and must never reach
  * the browser. Rate limits are enforced per key, not per caller, so a burst
@@ -93,6 +108,8 @@ async function post(path: string, body: unknown, timeoutMs: number, target: Targ
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeoutMs);
     try {
+      // -> https://developer.amd.com.cn/radeon/api/v1{path} unless an
+      //    AMD Developer Cloud endpoint has been configured for generation.
       const res = await fetch(`${url}${path}`, {
         method: "POST",
         headers: {

@@ -120,22 +120,60 @@ The idea is from a dissertation on neurosymbolic knowledge graphs: an edge is a
 connector, a node is an event, and provenance is part of the data rather than a note
 about it.
 
-## AMD
+## AMD — where every model call goes
 
-Everything the models do runs on AMD Token Factory, free OpenAI-compatible endpoints
-served on AMD GPUs. The Evolus workspace is pinned to that same endpoint as its own
-model, so the agent's answers are generated on AMD too, not on a model Evolus chose.
+```
+https://developer.amd.com.cn/radeon/api/v1
+```
 
-| | |
+**[`lib/amd.ts`](lib/amd.ts) is the only file in this repository that reaches an
+inference provider.** It has exactly two ways out, and both post to the endpoint above:
+
+| function | request |
+|---|---|
+| [`ocr()`](lib/amd.ts) | `POST https://developer.amd.com.cn/radeon/api/v1/ocr` |
+| [`chat()`](lib/amd.ts) | `POST https://developer.amd.com.cn/radeon/api/v1/chat/completions` |
+
+There is no OpenAI, no Anthropic, and no other hosted model anywhere in the codebase —
+`grep -rn "api.openai\|anthropic" lib app` returns nothing. The Evolus agent is bound to
+that same AMD endpoint as a custom model, so its answers are generated on AMD too rather
+than on a model Evolus chose.
+
+Every call made by the running application is attributed on screen. Upload a notice and
+each stage shows which provider served it and what it cost:
+
+```
+AMD     read the document                    13.0s
+EVOLUS  extract fields                        8.2s
+AMD     normalise the notice                 16.7s
+ENGINE  match against the bill of materials   5 of our 9 parts named
+```
+
+| model | used for |
 |---|---|
 | `MinerU2.5-Pro` | OCR. Takes a data URI, returns Markdown per page. |
 | `DeepSeek-V4-Flash` | Normalisation, memos, drafts, the agent, and distillation. |
 
-A note on model choice: `Gemma-4-31B-IT` would be the preferred generator, and the code
-switches to it with one environment variable. On 14 October 2026 it collapses into
-repeated fragments and leaks raw special tokens on every call, short or long, so the
-default is a model that works. `scripts/probe-model.ts` and `scripts/probe-gemma-short.ts`
-reproduce it.
+Generation can additionally be served from a Gemma instance on an AMD Developer Cloud
+droplet by setting one environment variable; OCR stays on Token Factory because MinerU
+is only served there. See [docs/AMD-COMPUTE.md](docs/AMD-COMPUTE.md).
+
+### A note on Gemma
+
+`Gemma-4-31B-IT` would be the preferred generator — it is the model the Google partner
+prize asks for, and the code switches to it with one environment variable. It is not
+usable through Token Factory:
+
+- **14 Oct** — present, but collapsing into repeated fragments and leaking raw
+  `<|tool_call>` on every call, short or long.
+- **15 Oct, 20:50** — still listed in `/models`, 12 models in the catalogue.
+- **15 Oct, 21:50** — **removed.** 11 models, nothing matching `/emma/i` across three
+  consecutive checks. Asking by name returns `400 ... not supported`; every prefixed
+  variant returns 404.
+
+`scripts/probe-gemma-short.ts` and `scripts/probe-gemma-id.ts` reproduce both states.
+The default is therefore a model that works, and the route to Gemma now runs through a
+droplet we serve ourselves — see [docs/AMD-COMPUTE.md](docs/AMD-COMPUTE.md).
 
 ## Evolus
 
