@@ -106,7 +106,7 @@ export function resetDataset() {
 }
 
 /** The shipped example, when someone asks to see it. */
-export function useDemoDataset() {
+export function loadDemoDataset() {
   active = DEMO_DATASET;
   rebuild();
 }

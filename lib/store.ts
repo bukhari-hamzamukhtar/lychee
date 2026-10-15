@@ -15,7 +15,7 @@ import { PCN_INBOX } from "@/data/factory";
 import {
   setActiveDataset,
   resetDataset,
-  useDemoDataset,
+  loadDemoDataset,
   activeDataset,
   type Dataset,
 } from "./graph";
@@ -103,7 +103,7 @@ const MAX_CHATS = 40;
  */
 function applyDataset(state: Persisted) {
   if (state.bom) setActiveDataset(state.bom.dataset);
-  else if (state.demo) useDemoDataset();
+  else if (state.demo) loadDemoDataset();
   else resetDataset();
 }
 
