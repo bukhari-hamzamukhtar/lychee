@@ -127,6 +127,26 @@ export function Figure({
  * orientation, and actions. Everything that explains the product lives on the
  * landing page, where someone is still deciding.
  */
+/**
+ * A countdown that can have run out.
+ *
+ * A notice whose last-time buy is already behind us is an ordinary thing to be
+ * holding — it arrived late, or it was uploaded from an archive. Rendering that
+ * as "-4638d" reads like a defect in the software rather than a fact about the
+ * part, so a date in the past says so in words.
+ */
+export function deadline(days: number): { text: string; passed: boolean } {
+  if (days < 0) {
+    const ago = Math.abs(days);
+    if (ago >= 365) {
+      const years = Math.floor(ago / 365);
+      return { text: `passed ${years} year${years === 1 ? "" : "s"} ago`, passed: true };
+    }
+    return { text: `passed ${ago}d ago`, passed: true };
+  }
+  return { text: `${days}d`, passed: false };
+}
+
 export function PageHead({
   title,
   meta,

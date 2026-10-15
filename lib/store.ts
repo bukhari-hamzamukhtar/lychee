@@ -14,6 +14,7 @@ import { createContext, useContext, useCallback, useEffect, useMemo, useRef, use
 import { PCN_INBOX } from "@/data/factory";
 import { setActiveDataset, resetDataset, activeDataset, type Dataset } from "./graph";
 import type { Pcn } from "./types";
+import type { Assertion, Source } from "./context-graph";
 import {
   ingestDocument,
   type IngestStage,
@@ -51,9 +52,25 @@ interface Persisted {
   approvals: Approval[];
   assessments: StoredAssessment[];
   bom: ImportedBom | null;
+  /** Documents dropped on the Ask page, kept with the text they were read as. */
+  sources: Source[];
+  /** What has been established, and where each piece of it came from.
+   *  The transcript is deliberately not stored: the claims outlive it. */
+  assertions: Assertion[];
 }
 
-const EMPTY: Persisted = { uploaded: [], approvals: [], assessments: [], bom: null };
+const EMPTY: Persisted = {
+  uploaded: [],
+  approvals: [],
+  assessments: [],
+  bom: null,
+  sources: [],
+  assertions: [],
+};
+
+/** A browser store is a few megabytes; a stack of OCR-ed PDFs will fill it. */
+const MAX_SOURCES = 12;
+const MAX_ASSERTIONS = 400;
 
 function read(): Persisted {
   if (typeof window === "undefined") return EMPTY;
@@ -66,6 +83,8 @@ function read(): Persisted {
       approvals: parsed.approvals ?? [],
       assessments: parsed.assessments ?? [],
       bom: parsed.bom ?? null,
+      sources: parsed.sources ?? [],
+      assertions: parsed.assertions ?? [],
     };
   } catch {
     // A corrupt or blocked store should not take the app down with it.
@@ -134,6 +153,13 @@ interface Workspace {
   isApproved: (pcnId: string, partId: string) => boolean;
   saveAssessment: (pcnId: string, payload: unknown) => void;
   getAssessment: (pcnId: string) => unknown | null;
+  sources: Source[];
+  assertions: Assertion[];
+  addSource: (s: Source) => void;
+  updateSource: (id: string, patch: Partial<Source>) => void;
+  removeSource: (id: string) => void;
+  addAssertions: (a: Assertion[]) => void;
+  clearKnowledge: () => void;
   upload: UploadState;
   startUpload: (file: File) => void;
   clearUpload: () => void;
@@ -222,6 +248,50 @@ export function useWorkspaceState(): Workspace {
     persist({ ...read(), bom: null });
   }, [persist]);
 
+  const addSource = useCallback(
+    (source: Source) => {
+      const cur = read();
+      persist({ ...cur, sources: [source, ...cur.sources].slice(0, MAX_SOURCES) });
+    },
+    [persist],
+  );
+
+  const updateSource = useCallback(
+    (id: string, patch: Partial<Source>) => {
+      const cur = read();
+      persist({
+        ...cur,
+        sources: cur.sources.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+      });
+    },
+    [persist],
+  );
+
+  const removeSource = useCallback(
+    (id: string) => {
+      const cur = read();
+      persist({ ...cur, sources: cur.sources.filter((s) => s.id !== id) });
+    },
+    [persist],
+  );
+
+  const addAssertions = useCallback(
+    (incoming: Assertion[]) => {
+      if (!incoming.length) return;
+      const cur = read();
+      // The same claim can be distilled twice out of two conversations; keep one.
+      const seen = new Set(cur.assertions.map((a) => a.subject + "|" + a.claim));
+      const fresh = incoming.filter((a) => !seen.has(a.subject + "|" + a.claim));
+      persist({ ...cur, assertions: [...fresh, ...cur.assertions].slice(0, MAX_ASSERTIONS) });
+    },
+    [persist],
+  );
+
+  const clearKnowledge = useCallback(() => {
+    const cur = read();
+    persist({ ...cur, sources: [], assertions: [] });
+  }, [persist]);
+
   const startUpload = useCallback(
     (file: File) => {
       inFlight.current?.abort();
@@ -305,6 +375,13 @@ export function useWorkspaceState(): Workspace {
       saveAssessment,
       getAssessment: (pcnId) =>
         state.assessments.find((a) => a.pcnId === pcnId)?.payload ?? null,
+      sources: state.sources,
+      assertions: state.assertions,
+      addSource,
+      updateSource,
+      removeSource,
+      addAssertions,
+      clearKnowledge,
       upload,
       startUpload,
       clearUpload,
@@ -323,6 +400,11 @@ export function useWorkspaceState(): Workspace {
       clearBom,
       startUpload,
       clearUpload,
+      addSource,
+      updateSource,
+      removeSource,
+      addAssertions,
+      clearKnowledge,
     ],
   );
 }

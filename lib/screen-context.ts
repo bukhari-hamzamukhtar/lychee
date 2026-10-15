@@ -9,7 +9,18 @@
  * context, and every line of it competes with the question for attention.
  */
 import { PCN_INBOX, SUPPLIERS, CERTIFICATIONS, CUSTOMERS, NODES } from "@/data/factory";
-import { impactOf, allPartsByRisk, obsolescenceRisk, qtyPerProduct, node } from "@/lib/graph";
+import {
+  impactOf,
+  allPartsByRisk,
+  obsolescenceRisk,
+  qtyPerProduct,
+  node,
+  activeDataset,
+  allProducts,
+  productAnnualRevenue,
+  annualMaterialCost,
+  partsUnder,
+} from "@/lib/graph";
 import type { Pcn } from "./types";
 import type { Approval } from "./store";
 
@@ -168,6 +179,91 @@ export function buildScreenContext({
         );
       }
       break;
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Everything the engine knows, independent of which screen is open.
+ *
+ * The floating assistant is given the screen because that is what the question
+ * is usually about. The Ask page is given this instead: the whole portfolio, so
+ * a question can range across it. Every figure here is a graph traversal, which
+ * is why the agent is told it may present these as exact and must mark anything
+ * read from a document differently.
+ */
+export function buildPortfolioFacts({
+  notices,
+  bomName,
+}: {
+  notices: Pcn[];
+  bomName: string | null;
+}): string {
+  const lines: string[] = [];
+  const ds = activeDataset();
+  const products = allProducts();
+
+  lines.push(
+    bomName
+      ? `Bill of materials: "${bomName}", imported by this user.`
+      : `Bill of materials: the built-in demo factory.`,
+  );
+  lines.push(
+    `${ds.nodes.filter((n) => n.kind === "part").length} components, ` +
+      `${ds.nodes.filter((n) => n.kind === "assembly").length} assemblies, ` +
+      `${products.length} finished products, ${ds.edges.length} BOM edges, ` +
+      `${ds.suppliers.length} suppliers.`,
+  );
+
+  if (products.length) {
+    lines.push("");
+    lines.push("PRODUCTS (annual revenue, annual material cost):");
+    for (const p of products.slice(0, 12)) {
+      lines.push(
+        `  ${p.id} "${p.name}": revenue ${eur(productAnnualRevenue(p.id))}/yr, ` +
+          `materials ${eur(annualMaterialCost(p.id))}/yr, ${partsUnder(p.id).length} components beneath it.`,
+      );
+    }
+  }
+
+  const risky = allPartsByRisk().slice(0, 10);
+  if (risky.length) {
+    lines.push("");
+    lines.push("COMPONENTS BY OBSOLESCENCE RISK (highest first, before any notice):");
+    for (const r of risky) {
+      const n = node(r.partId);
+      const reaches = Object.keys(qtyPerProduct(r.partId));
+      lines.push(
+        `  ${r.partId} "${n?.name ?? ""}": risk ${r.score}/100, ` +
+          `${n?.altSources ? `${n.altSources} alternative source(s)` : "sole sourced"}, ` +
+          `stock ${n?.stockQty ?? "unknown"}, lead ${n?.leadTimeWeeks ?? "unknown"} wk, ` +
+          `reaches ${reaches.length} product(s)${reaches.length ? `: ${reaches.join(", ")}` : ""}.`,
+      );
+    }
+  }
+
+  if (notices.length) {
+    lines.push("");
+    lines.push("OPEN NOTICES:");
+    for (const pcn of notices.slice(0, 10)) {
+      const supplier = SUPPLIERS.find((x) => x.id === pcn.supplierId)?.name ?? pcn.supplierId;
+      lines.push(
+        `  ${pcn.id} from ${supplier}, ${pcn.type === "eol" ? "end of life" : "product change"}, ` +
+          `last-time buy ${pcn.lastBuyDate}, parts ${pcn.partIds.join(", ") || "none matched"}` +
+          (pcn.typeEvidence ? ` (type read from ${pcn.typeEvidence})` : "") +
+          ".",
+      );
+      for (const partId of pcn.partIds.slice(0, 6)) {
+        const r = impactOf(partId, pcn.lastBuyDate, ASOF);
+        if (!r) continue;
+        lines.push(
+          `    ${r.partId}: ${r.verdict}, ${r.daysToLastBuy} days left, ` +
+            `must buy ${r.lastBuyQty} for ${eur(r.lastBuyCostEur)}, ` +
+            `revenue exposed ${eur(r.revenueAtRiskEur)}/yr.`,
+        );
+      }
     }
   }
 

@@ -6,7 +6,7 @@ import { useWorkspace } from "@/lib/store";
 import { impactOf, allPartsByRisk, productAnnualRevenue } from "@/lib/graph";
 import { SUPPLIERS } from "@/data/factory";
 import { UploadDropzone } from "@/components/UploadDropzone";
-import { PageHead, Tag, Panel, SectionTitle, Figure, SkeletonRows, eur, num, verdictTone } from "@/components/ui";
+import { PageHead, Tag, Panel, SectionTitle, Figure, SkeletonRows, eur, num, verdictTone, deadline} from "@/components/ui";
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
 
@@ -100,7 +100,7 @@ export default function NoticesPage() {
                               lead.daysToLastBuy < 60 ? "text-crit" : "text-fg"
                             }`}
                           >
-                            {lead.daysToLastBuy} days
+                            {deadline(lead.daysToLastBuy).text}
                           </div>
                         </div>
                         <div className="hidden text-right sm:block">

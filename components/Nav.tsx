@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
 import { Wordmark } from "./Logo";
+import { deadline } from "./ui";
 import { impactOf } from "@/lib/graph";
 
 /**
@@ -24,6 +25,7 @@ const TABS = [
   { href: "/certifications", label: "Certifications" },
   { href: "/approvals", label: "Approvals" },
   { href: "/import", label: "Import" },
+  { href: "/ask", label: "Ask" },
 ] as const;
 
 const ASOF = new Date("2026-10-14T00:00:00Z");
@@ -112,9 +114,16 @@ export function Nav() {
               />
               <span className="text-[14px] text-dim">
                 {soonest !== undefined ? (
-                  <>
-                    next deadline <span className="tabular-nums text-fg">{soonest}d</span>
-                  </>
+                  deadline(soonest).passed ? (
+                    <>
+                      last buy <span className="text-fg">{deadline(soonest).text}</span>
+                    </>
+                  ) : (
+                    <>
+                      next deadline{" "}
+                      <span className="tabular-nums text-fg">{deadline(soonest).text}</span>
+                    </>
+                  )
                 ) : (
                   "all clear"
                 )}

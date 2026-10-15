@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ImpactReport } from "@/lib/types";
-import { Tag, Panel, SectionTitle, Figure, eur, num, verdictTone } from "./ui";
+import { Tag, Panel, SectionTitle, Figure, eur, num, verdictTone, deadline} from "./ui";
 import { PropagationGraph } from "./PropagationGraph";
 
 export function ImpactPanel({ report: r }: { report: ImpactReport }) {
@@ -30,7 +30,7 @@ export function ImpactPanel({ report: r }: { report: ImpactReport }) {
       <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
         <Figure
           label="Last buy in"
-          value={`${r.daysToLastBuy} days`}
+          value={deadline(r.daysToLastBuy).text}
           sub={r.lastBuyDate}
           tone={r.daysToLastBuy < 60 ? "crit" : undefined}
         />
