@@ -2,22 +2,23 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { NODES, SUPPLIERS, EDGES } from "@/data/factory";
-import { allPartsByRisk, qtyPerProduct } from "@/lib/graph";
+import { allPartsByRisk, qtyPerProduct, activeDataset} from "@/lib/graph";
 import { PageHead, Tag, Panel, SectionTitle, Figure, eur, num } from "@/components/ui";
+import { useWorkspace } from "@/lib/store";
 
 type SortKey = "risk" | "id" | "stock" | "lead";
 
 export default function PartsPage() {
+  const { datasetKey } = useWorkspace();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("risk");
 
-  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), []);
+  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), [datasetKey]);
 
   const rows = useMemo(() => {
-    const parts = NODES.filter((n) => n.kind === "part").map((n) => ({
+    const parts = activeDataset().nodes.filter((n) => n.kind === "part").map((n) => ({
       ...n,
-      supplier: SUPPLIERS.find((s) => s.id === n.supplierId)?.name ?? "—",
+      supplier: activeDataset().suppliers.find((s) => s.id === n.supplierId)?.name ?? "—",
       score: risk.get(n.id) ?? 0,
       products: Object.keys(qtyPerProduct(n.id)).length,
     }));
@@ -49,7 +50,7 @@ export default function PartsPage() {
 
       <Panel>
         <div className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
-          <Figure label="Components" value={rows.length} sub={`${EDGES.length} BOM edges`} />
+          <Figure label="Components" value={rows.length} sub={`${activeDataset().edges.length} BOM edges`} />
           <Figure label="Sole sourced" value={soleSourced} tone={soleSourced ? "crit" : undefined} sub="no alternative" />
           <Figure label="Not recommended" value={nrnd} tone={nrnd ? "warn" : undefined} sub="for new designs" />
           <Figure label="Inventory value" value={eur(inventory)} sub="at standard cost" />

@@ -3,6 +3,8 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Nav } from "@/components/Nav";
+import { ExampleBanner } from "@/components/ExampleBanner";
+import { NoDataNotice } from "@/components/NoDataNotice";
 import { ThemeToggle, THEME_SCRIPT } from "@/components/ThemeToggle";
 import { Assistant } from "@/components/Assistant";
 import { Logo } from "@/components/Logo";
@@ -26,6 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-bg font-sans text-[16.5px] leading-relaxed antialiased">
         <Providers>
           <Nav />
+          <ExampleBanner />
+          <NoDataNotice />
           {children}
           <footer className="border-t border-line">
             <div className="mx-auto max-w-[1320px] px-8 py-12">
@@ -38,7 +42,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Impact figures are computed from the bill of materials by graph traversal,
                   not generated. Documents are read and memos written by open models served
                   on AMD GPUs, orchestrated through Evolus. Nothing is dispatched without a
-                  named approver. All data shown is synthetic.
+                  named approver. The workspace starts empty; the example factory is
+                  synthetic and is labelled wherever it appears.
                 </p>
               </div>
             </div>

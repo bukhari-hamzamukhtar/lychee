@@ -2,21 +2,22 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { CERTIFICATIONS, NODES } from "@/data/factory";
-import { allPartsByRisk, node } from "@/lib/graph";
+import { allPartsByRisk, node, activeDataset} from "@/lib/graph";
 import { PageHead, Eyebrow, Figure, SectionTitle, Tag, eur } from "@/components/ui";
+import { useWorkspace } from "@/lib/store";
 
 export default function CertificationsPage() {
-  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), []);
+  const { datasetKey } = useWorkspace();
+  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), [datasetKey]);
 
   const rows = useMemo(
     () =>
-      CERTIFICATIONS.map((c) => {
+      activeDataset().certifications.map((c) => {
         const critical = c.criticalPartIds.map((id) => ({
           id,
           name: node(id)?.name ?? id,
           score: risk.get(id) ?? 0,
-          sole: NODES.find((n) => n.id === id)?.altSources === 0,
+          sole: activeDataset().nodes.find((n) => n.id === id)?.altSources === 0,
         }));
         const exposed = critical.filter((p) => p.score >= 70);
         // Requalification is incurred per affected product, not once.

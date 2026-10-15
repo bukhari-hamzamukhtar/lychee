@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { SUPPLIERS, NODES } from "@/data/factory";
-import { allPartsByRisk, qtyPerProduct } from "@/lib/graph";
+import { allPartsByRisk, qtyPerProduct, activeDataset} from "@/lib/graph";
 import { PageHead, Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
+import { useWorkspace } from "@/lib/store";
 
 export default function SuppliersPage() {
-  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), []);
+  const { datasetKey } = useWorkspace();
+  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), [datasetKey]);
 
   const rows = useMemo(
     () =>
-      SUPPLIERS.map((s) => {
-        const parts = NODES.filter((n) => n.kind === "part" && n.supplierId === s.id);
+      activeDataset().suppliers.map((s) => {
+        const parts = activeDataset().nodes.filter((n) => n.kind === "part" && n.supplierId === s.id);
         const atRisk = parts.filter((p) => (risk.get(p.id) ?? 0) >= 70);
         const sole = parts.filter((p) => p.altSources === 0);
         const inventory = parts.reduce((t, p) => t + (p.stockQty ?? 0) * (p.unitCostEur ?? 0), 0);
@@ -33,7 +34,7 @@ export default function SuppliersPage() {
       <div>
         <div className="mt-12 grid gap-px border border-line sm:grid-cols-3">
           <div className="border border-line">
-            <Figure label="Suppliers" value={rows.length} sub={`${NODES.filter((n) => n.kind === "part").length} components`} />
+            <Figure label="Suppliers" value={rows.length} sub={`${activeDataset().nodes.filter((n) => n.kind === "part").length} components`} />
           </div>
           <div className="border border-line">
             <Figure

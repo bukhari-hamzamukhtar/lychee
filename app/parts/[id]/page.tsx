@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { use, useMemo } from "react";
-import { NODES, SUPPLIERS, CERTIFICATIONS } from "@/data/factory";
-import { impactOf, obsolescenceRisk, qtyPerProduct, pathsToProducts, node } from "@/lib/graph";
+import { impactOf, obsolescenceRisk, qtyPerProduct, pathsToProducts, node, activeDataset} from "@/lib/graph";
 import { ImpactPanel } from "@/components/ImpactPanel";
 import { Tag, Panel, Empty, SectionTitle, Figure, eur, num } from "@/components/ui";
 
@@ -41,8 +40,8 @@ export default function PartDetail({ params }: { params: Promise<{ id: string }>
     );
   }
 
-  const supplier = SUPPLIERS.find((s) => s.id === part.supplierId);
-  const certs = CERTIFICATIONS.filter((c) => c.criticalPartIds.includes(partId));
+  const supplier = activeDataset().suppliers.find((s) => s.id === part.supplierId);
+  const certs = activeDataset().certifications.filter((c) => c.criticalPartIds.includes(partId));
 
   return (
     <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">

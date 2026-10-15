@@ -28,12 +28,12 @@ interface GroundingSource {
   text: string;
 }
 
-const MAX_HISTORY = 8;
+const MAX_HISTORY = 20;
 const MAX_QUESTION = 2000;
 const MAX_CONTEXT = 6000;
-const MAX_SOURCE_CHARS = 7000;
-const MAX_SOURCES = 8;
-const MAX_ASSERTIONS = 60;
+const MAX_SOURCE_CHARS = 40000;
+const MAX_SOURCES = 12;
+const MAX_ASSERTIONS = 200;
 
 /**
  * Added only when documents are in play.

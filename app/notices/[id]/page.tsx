@@ -4,8 +4,7 @@ import Link from "next/link";
 import { use, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
-import { impactOf } from "@/lib/graph";
-import { SUPPLIERS } from "@/data/factory";
+import { impactOf, activeDataset} from "@/lib/graph";
 import { ImpactPanel } from "@/components/ImpactPanel";
 import { AssessPanel, type AssessResult } from "@/components/AssessPanel";
 import { ScenarioControl } from "@/components/ScenarioControl";
@@ -25,7 +24,7 @@ export default function NoticeDetail({ params }: { params: Promise<{ id: string 
 
   const pcn = notices.find((p) => p.id === decodeURIComponent(id));
   const isUpload = uploaded.some((u) => u.id === pcn?.id);
-  const supplier = SUPPLIERS.find((s) => s.id === pcn?.supplierId);
+  const supplier = activeDataset().suppliers.find((s) => s.id === pcn?.supplierId);
 
   const reports = useMemo(() => {
     if (!pcn) return [];

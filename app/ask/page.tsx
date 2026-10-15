@@ -8,17 +8,20 @@
  * as many as you like at once, and ask across all of them and the bill of
  * materials together.
  *
+ * Conversations are separate and their memory does not leak between them. What
+ * carries across is a deliberate act — forking distils the parent's transcript
+ * into claims, hands those to the child, and gives the window back.
+ *
  * The context gauge is not decoration. A reader should be able to see what the
  * agent is actually being given, how much room is left, and what happens when
- * it runs out — which is that the transcript is distilled into assertions and
- * then discarded, so what survives is the claims and their provenance rather
- * than a paragraph of summary nobody can check.
+ * it runs out.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspace } from "@/lib/store";
 import { buildPortfolioFacts } from "@/lib/screen-context";
 import { fileToBase64, MAX_UPLOAD_BYTES } from "@/lib/ingest-client";
+import type { Turn } from "@/lib/chats";
 import {
   assertion,
   measureContext,
@@ -30,14 +33,7 @@ import {
   type Source,
   type Standing,
 } from "@/lib/context-graph";
-import { Button, Eyebrow, PageHead, SectionTitle, Tag, num } from "@/components/ui";
-
-interface Turn {
-  role: "user" | "assistant";
-  content: string;
-  ms?: number;
-  costUsd?: number;
-}
+import { Button, Eyebrow, PageHead, SectionTitle, num } from "@/components/ui";
 
 const OCR_TYPES = /\.(pdf|png|jpe?g|webp)$/i;
 const TEXT_TYPES = /\.(csv|tsv|txt|md|json)$/i;
@@ -47,13 +43,32 @@ const CONCURRENCY = 2;
 let sourceSeq = 0;
 const newId = () => `S${Date.now().toString(36)}${(sourceSeq += 1).toString(36)}`;
 
+/** Turn whatever /api/distil returned into assertions with provenance attached. */
+function toAssertions(json: Record<string, unknown>): Assertion[] {
+  const raw = Array.isArray(json.assertions) ? (json.assertions as Record<string, string>[]) : [];
+  return raw.map((a) =>
+    assertion(a.subject, a.claim, (a.standing as Standing) ?? "inferred", {
+      kind: a.ref === "engine" ? "engine" : a.ref === "conversation" ? "conversation" : "document",
+      ref: a.ref || "conversation",
+      by: String(json.model ?? "the model"),
+    }),
+  );
+}
+
 export default function AskPage() {
   const {
     notices,
     bom,
     hydrated,
     sources,
-    assertions,
+    chats,
+    chat,
+    openChat,
+    startChat,
+    forkChat,
+    renameChat,
+    deleteChat,
+    setTurns,
     addSource,
     updateSource,
     removeSource,
@@ -64,13 +79,20 @@ export default function AskPage() {
   const input = useRef<HTMLInputElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
-  const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [compacting, setCompacting] = useState(false);
-  const [lastCompaction, setLastCompaction] = useState<string | null>(null);
+  const [busy, setBusy] = useState<null | "distil" | "fork">(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [over, setOver] = useState(false);
+
+  // There is always a conversation to be in.
+  useEffect(() => {
+    if (hydrated && !chat) startChat();
+  }, [hydrated, chat, startChat]);
+
+  const turns = chat?.turns ?? [];
+  const assertions = useMemo(() => chat?.assertions ?? [], [chat]);
 
   /* ----------------------------------------------------------- the context */
 
@@ -79,14 +101,12 @@ export default function AskPage() {
     [hydrated, notices, bom],
   );
 
-  const ready = sources.filter((s) => s.status === "ready");
-
+  const ready = useMemo(() => sources.filter((s) => s.status === "ready"), [sources]);
   const sourceText = useMemo(
     () => ready.map((s) => `--- ${s.filename} ---\n${s.text}`).join("\n\n"),
     [ready],
   );
-
-  const chosenAssertions = useMemo(() => selectAssertions(assertions, 1800), [assertions]);
+  const chosenAssertions = useMemo(() => selectAssertions(assertions, 6000), [assertions]);
   const assertionText = useMemo(
     () => chosenAssertions.map(renderAssertion).join("\n"),
     [chosenAssertions],
@@ -120,7 +140,7 @@ export default function AskPage() {
         // A spreadsheet or a text file needs no OCR; the browser can read it.
         try {
           const text = await file.text();
-          updateSource(id, { status: "ready", text: text.slice(0, 20000), ms: 0 });
+          updateSource(id, { status: "ready", text: text.slice(0, 40000), ms: 0 });
         } catch {
           updateSource(id, { status: "error", error: "that file could not be read as text" });
         }
@@ -204,7 +224,7 @@ export default function AskPage() {
           continue;
         }
         const id = newId();
-        const source: Source = {
+        addSource({
           id,
           filename: file.name,
           mime: file.type || "application/octet-stream",
@@ -212,8 +232,7 @@ export default function AskPage() {
           status: "queued",
           text: "",
           addedAt: new Date().toISOString(),
-        };
-        addSource(source);
+        } satisfies Source);
         queued.push({ file, id });
       }
 
@@ -232,30 +251,26 @@ export default function AskPage() {
     [addSource, readOne],
   );
 
-  /* ------------------------------------------------------------ compaction */
+  /* ------------------------------------------------ distilling and forking */
+
+  const distilTurns = useCallback(async (): Promise<Assertion[]> => {
+    const res = await fetch("/api/distil", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ history: turns.map((t) => ({ role: t.role, content: t.content })) }),
+    });
+    return toAssertions(await res.json());
+  }, [turns]);
 
   const compact = useCallback(async () => {
-    if (!turns.length || compacting) return;
-    setCompacting(true);
+    if (!chat || !turns.length || busy) return;
+    setBusy("distil");
     setError(null);
     try {
-      const res = await fetch("/api/distil", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: turns.map((t) => ({ role: t.role, content: t.content })) }),
-      });
-      const json = await res.json();
-      const raw = Array.isArray(json.assertions) ? json.assertions : [];
-      const made: Assertion[] = raw.map((a: Record<string, string>) =>
-        assertion(a.subject, a.claim, (a.standing as Standing) ?? "inferred", {
-          kind: a.ref === "engine" ? "engine" : a.ref === "conversation" ? "conversation" : "document",
-          ref: a.ref || "conversation",
-          by: String(json.model ?? "the model"),
-        }),
-      );
+      const made = await distilTurns();
       addAssertions(made);
-      setTurns([]);
-      setLastCompaction(
+      setTurns(chat.id, []);
+      setNotice(
         made.length
           ? `${made.length} claim${made.length === 1 ? "" : "s"} kept, transcript discarded.`
           : "Nothing in that conversation was worth keeping; transcript discarded.",
@@ -263,20 +278,42 @@ export default function AskPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "the conversation could not be distilled");
     } finally {
-      setCompacting(false);
+      setBusy(null);
     }
-  }, [turns, compacting, addAssertions]);
+  }, [chat, turns, busy, distilTurns, addAssertions, setTurns]);
+
+  const fork = useCallback(async () => {
+    if (!chat || busy) return;
+    setBusy("fork");
+    setError(null);
+    try {
+      // Everything this conversation established goes to the child; its
+      // transcript does not, which is where the room comes back from.
+      const carried = turns.length ? await distilTurns() : [];
+      forkChat(chat.id, carried);
+      setNotice(
+        carried.length
+          ? `Forked with ${carried.length} claim${carried.length === 1 ? "" : "s"} carried over.`
+          : "Forked.",
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "the conversation could not be forked");
+    } finally {
+      setBusy(null);
+    }
+  }, [chat, turns, busy, distilTurns, forkChat]);
 
   /* ----------------------------------------------------------------- asking */
 
   const ask = useCallback(async () => {
     const q = question.trim();
-    if (!q || asking) return;
+    if (!q || asking || !chat) return;
     setQuestion("");
     setError(null);
+    setNotice(null);
     setAsking(true);
-    const asked: Turn = { role: "user", content: q };
-    setTurns((t) => [...t, asked]);
+    const withQuestion: Turn[] = [...turns, { role: "user", content: q }];
+    setTurns(chat.id, withQuestion);
 
     try {
       const res = await fetch("/api/ask", {
@@ -287,13 +324,13 @@ export default function AskPage() {
           facts,
           assertions: chosenAssertions.map(renderAssertion),
           sources: ready.map((s) => ({ filename: s.filename, text: s.text })),
-          history: turns.slice(-8).map((t) => ({ role: t.role, content: t.content })),
+          history: turns.slice(-20).map((t) => ({ role: t.role, content: t.content })),
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `the agent failed (${res.status})`);
-      setTurns((t) => [
-        ...t,
+      setTurns(chat.id, [
+        ...withQuestion,
         { role: "assistant", content: String(json.answer), ms: json.ms, costUsd: json.costUsd },
       ]);
     } catch (e) {
@@ -301,7 +338,7 @@ export default function AskPage() {
     } finally {
       setAsking(false);
     }
-  }, [question, asking, facts, chosenAssertions, ready, turns]);
+  }, [question, asking, chat, turns, facts, chosenAssertions, ready, setTurns]);
 
   /* ------------------------------------------------------------------ view */
 
@@ -311,17 +348,91 @@ export default function AskPage() {
         title="Ask"
         meta="Bring documents to Vigil and ask across all of them and your bill of materials at once."
         actions={
-          assertions.length > 0 || sources.length > 0 ? (
-            <Button tone="quiet" onClick={clearKnowledge}>
-              Forget everything
+          <div className="flex items-center gap-3">
+            <Button tone="quiet" onClick={() => void fork()} disabled={!chat || busy !== null}>
+              {busy === "fork" ? "Forking" : "Fork"}
             </Button>
-          ) : undefined
+            <Button onClick={startChat}>New conversation</Button>
+          </div>
         }
       />
 
-      <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-10 lg:grid-cols-[210px_minmax(0,1fr)_340px]">
+        {/* ------------------------------------------------- conversation list */}
+        <aside className="min-w-0">
+          <SectionTitle>Conversations</SectionTitle>
+          <ul className="space-y-px">
+            {chats.map((c) => {
+              const active = c.id === chat?.id;
+              return (
+                <li key={c.id}>
+                  <button
+                    onClick={() => openChat(c.id)}
+                    className={`group flex w-full flex-col items-start gap-0.5 border-l px-3 py-2.5 text-left transition-colors ${
+                      active
+                        ? "border-accent bg-bg-raised"
+                        : "border-line hover:border-line-bright"
+                    }`}
+                  >
+                    <span
+                      className={`line-clamp-2 text-[13px] leading-snug ${
+                        active ? "text-fg" : "text-mid"
+                      }`}
+                    >
+                      {c.title}
+                    </span>
+                    <span className="text-[11px] text-dim">
+                      {c.assertions.length > 0
+                        ? `${c.assertions.length} claim${c.assertions.length === 1 ? "" : "s"}`
+                        : c.turns.length > 0
+                          ? `${c.turns.length} message${c.turns.length === 1 ? "" : "s"}`
+                          : "empty"}
+                      {c.forkedFrom ? " · forked" : ""}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {chat && (
+            <div className="mt-4 space-y-2">
+              <button
+                onClick={() => {
+                  const t = window.prompt("Name this conversation", chat.title);
+                  if (t !== null) renameChat(chat.id, t);
+                }}
+                className="block text-[12px] text-dim transition-colors hover:text-fg"
+              >
+                Rename
+              </button>
+              <button
+                onClick={clearKnowledge}
+                className="block text-[12px] text-dim transition-colors hover:text-fg"
+              >
+                Forget everything here
+              </button>
+              {chats.length > 1 && (
+                <button
+                  onClick={() => deleteChat(chat.id)}
+                  className="block text-[12px] text-dim transition-colors hover:text-crit"
+                >
+                  Delete this conversation
+                </button>
+              )}
+            </div>
+          )}
+        </aside>
+
         {/* ----------------------------------------------------- conversation */}
         <div className="min-w-0">
+          {chat?.forkedFrom && (
+            <p className="mb-4 border-l border-line pl-3.5 text-[12.5px] text-dim">
+              Forked from <span className="text-mid">{chat.forkedFrom.title}</span>, carrying what
+              it had established.
+            </p>
+          )}
+
           <div
             ref={scroller}
             className="max-h-[52vh] min-h-[220px] overflow-y-auto border border-line px-6 py-5"
@@ -368,9 +479,7 @@ export default function AskPage() {
             )}
           </div>
 
-          {lastCompaction && (
-            <p className="mt-3 text-[12.5px] text-dim">{lastCompaction}</p>
-          )}
+          {notice && <p className="mt-3 text-[12.5px] text-dim">{notice}</p>}
           {error && (
             <p className="mt-3 border border-crit/50 px-4 py-3 text-[13px] text-crit">{error}</p>
           )}
@@ -393,15 +502,15 @@ export default function AskPage() {
               {asking ? "Asking" : "Ask"}
             </Button>
           </div>
-          <p className="mt-2 text-[11.5px] text-dim">
-            Enter to send, Shift+Enter for a new line.
-          </p>
+          <p className="mt-2 text-[11.5px] text-dim">Enter to send, Shift+Enter for a new line.</p>
         </div>
 
         {/* ---------------------------------------------------------- sidebar */}
         <div className="space-y-10">
           <section>
-            <SectionTitle aside={<span className="text-[12px] text-dim">{num(sources.length)}</span>}>
+            <SectionTitle
+              aside={<span className="text-[12px] text-dim">{num(sources.length)}</span>}
+            >
               Documents
             </SectionTitle>
 
@@ -436,8 +545,8 @@ export default function AskPage() {
                 <Button onClick={() => input.current?.click()}>Choose files</Button>
               </div>
               <p className="mt-2.5 text-[11.5px] leading-relaxed text-dim">
-                PDF, images, CSV or text. Scans go through MinerU on AMD; spreadsheets
-                are read here without a round trip.
+                PDF, images, CSV or text. Shared by every conversation, because they are
+                your files rather than something one chat found out.
               </p>
             </div>
 
@@ -453,7 +562,9 @@ export default function AskPage() {
                         {s.status === "ready" ? (
                           <>
                             {num(estimateTokens(s.text))} tokens
-                            {s.pageCount ? ` · ${s.pageCount} page${s.pageCount === 1 ? "" : "s"}` : ""}
+                            {s.pageCount
+                              ? ` · ${s.pageCount} page${s.pageCount === 1 ? "" : "s"}`
+                              : ""}
                             {s.ms ? ` · ${(s.ms / 1000).toFixed(1)}s` : ""}
                           </>
                         ) : s.status === "error" ? (
@@ -483,7 +594,8 @@ export default function AskPage() {
           <ContextGauge
             use={use}
             onCompact={() => void compact()}
-            compacting={compacting}
+            onFork={() => void fork()}
+            busy={busy}
             canCompact={turns.length > 0}
           />
 
@@ -491,13 +603,13 @@ export default function AskPage() {
             <SectionTitle
               aside={<span className="text-[12px] text-dim">{num(assertions.length)}</span>}
             >
-              What has been established
+              What this conversation knows
             </SectionTitle>
             {assertions.length === 0 ? (
               <p className="text-[13px] leading-relaxed text-dim">
                 Nothing yet. When this conversation fills the window it is distilled into
                 claims, each one carrying where it came from, and the transcript is thrown
-                away. The claims are what the agent keeps.
+                away. The claims are what it keeps — and what a fork takes with it.
               </p>
             ) : (
               <ul className="space-y-3">
@@ -526,17 +638,19 @@ export default function AskPage() {
  * Split by where it came from rather than shown as one bar, because the parts
  * behave differently: documents and established claims survive a compaction and
  * the transcript does not, and that is the thing worth understanding before you
- * press the button.
+ * press either button.
  */
 function ContextGauge({
   use,
   onCompact,
-  compacting,
+  onFork,
+  busy,
   canCompact,
 }: {
   use: ReturnType<typeof measureContext>;
   onCompact: () => void;
-  compacting: boolean;
+  onFork: () => void;
+  busy: null | "distil" | "fork";
   canCompact: boolean;
 }) {
   const pct = Math.min(100, Math.round(use.ratio * 100));
@@ -575,34 +689,31 @@ function ContextGauge({
         </div>
       </dl>
 
-      {use.shouldCompact ? (
-        <div className="mt-4 border border-warn/50 px-4 py-3">
-          <p className="text-[12.5px] leading-relaxed text-warn">
-            The window is nearly full. Distil the conversation to keep what it established
+      <div className={`mt-4 ${use.shouldCompact ? "border border-warn/50 px-4 py-3" : ""}`}>
+        {use.shouldCompact && (
+          <p className="mb-3 text-[12.5px] leading-relaxed text-warn">
+            The window is nearly full. Distil to keep what this conversation established
             and discard the rest.
           </p>
-          <div className="mt-3">
-            <Button tone="accent" onClick={onCompact} disabled={compacting || !canCompact}>
-              {compacting ? "Distilling" : "Distil and clear"}
-            </Button>
-          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            tone={use.shouldCompact ? "accent" : "quiet"}
+            onClick={onCompact}
+            disabled={busy !== null || !canCompact}
+          >
+            {busy === "distil" ? "Distilling" : "Distil and clear"}
+          </Button>
+          <Button tone="quiet" onClick={onFork} disabled={busy !== null}>
+            {busy === "fork" ? "Forking" : "Fork"}
+          </Button>
         </div>
-      ) : (
-        canCompact && (
-          <div className="mt-4">
-            <Button tone="quiet" onClick={onCompact} disabled={compacting}>
-              {compacting ? "Distilling" : "Distil now"}
-            </Button>
-            <p className="mt-2 text-[11.5px] leading-relaxed text-dim">
-              Turns this conversation into claims with sources, then clears it.
-            </p>
-          </div>
-        )
-      )}
+      </div>
 
       <p className="mt-3 text-[11.5px] leading-relaxed text-dim">
-        Grey survives a distillation. <span className="text-accent">Orange</span> is the
-        transcript, which does not.
+        Grey survives. <span className="text-accent">Orange</span> is the transcript,
+        which does not. Distilling clears it here; forking starts a new conversation with
+        the claims and an empty window.
       </p>
     </section>
   );

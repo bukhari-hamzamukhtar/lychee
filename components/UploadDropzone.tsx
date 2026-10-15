@@ -91,9 +91,14 @@ export function UploadDropzone() {
           <>
             <p className="text-sm font-medium text-fg">Drop a supplier notice here</p>
             <p className="mt-1.5 max-w-md text-[12.5px] leading-relaxed text-dim">
-              A PDF or a photo of one, in any language. It is read by MinerU on AMD GPUs,
-              the fields are extracted through Evolus, and the part numbers are matched
-              against your bill of materials.
+              A letter from a manufacturer saying a component is changing or ending —
+              a PDF or a photo of one, in any language. It is read on AMD GPUs and the
+              part numbers in it are matched against your bill of materials.
+            </p>
+            <p className="mt-2.5 max-w-md text-[11.5px] leading-relaxed text-dim">
+              Not your parts list. That goes in under{" "}
+              <span className="text-mid">Bill of materials</span>, once, and everything
+              here is checked against it.
             </p>
             <div className="mt-4 flex items-center gap-3">
               <Button onClick={() => input.current?.click()}>Choose a file</Button>

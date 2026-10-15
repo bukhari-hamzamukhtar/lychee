@@ -54,6 +54,8 @@ const STEPS = [
   ["Approve", "A person", "Someone commits the spend. The agent prepares the decision; it does not take it."],
 ];
 
+import { Tour } from "@/components/Tour";
+
 export default function Landing() {
   return (
     <div>
@@ -197,74 +199,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ------------------------------------------------ how */}
-      <section id="how" className="scroll-mt-16 border-b border-line">
-        <div className="mx-auto max-w-[1320px] px-8 py-24">
-          <Reveal>
-            <Eyebrow>How it works</Eyebrow>
-            <h2 className="mt-5 max-w-[22ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
-              Seven steps, about twenty seconds
-            </h2>
-          </Reveal>
-
-          <ol className="mt-16 space-y-px">
-            {STEPS.map(([title, who, body], i) => (
-              <Reveal key={title} delay={(i % 3) as 0 | 1 | 2} as="li">
-                <div className="flex flex-col gap-4 border border-line p-7 transition-colors duration-300 hover:border-line-bright sm:flex-row sm:items-baseline sm:gap-10">
-                  <span className="font-mono text-[13px] text-dim">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="w-32 shrink-0 text-[17px] font-medium">{title}</span>
-                  <span className="w-32 shrink-0 text-[12px] uppercase tracking-wider text-accent">
-                    {who}
-                  </span>
-                  <span className="flex-1 leading-relaxed text-mid">{body}</span>
-                </div>
-              </Reveal>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------ the worked example, as proof */}
-      <section className="border-b border-line">
-        <div className="mx-auto max-w-[1320px] px-8 py-24">
-          <Reveal>
-            <Eyebrow>Proof, on a real component</Eyebrow>
-            <h2 className="mt-5 max-w-[22ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
-              A digital isolator, discontinued with 34 days&rsquo; notice
-            </h2>
-            <p className="mt-6 max-w-[62ch] leading-relaxed text-mid">
-              An ordinary part, in an ordinary drive. Here is everything the engine found
-              that a spreadsheet would not have.
-            </p>
-          </Reveal>
-
-          <div className="mt-16 grid gap-px border border-line sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { v: <CountUp to={5} />, l: "products affected", s: "through 3 assemblies" },
-              { v: <CountUp to={13} />, l: "in a single MD-7500", s: "by two separate routes" },
-              { v: <CountUp to={4.7} decimals={1} suffix=" wk" />, l: "of stock left", s: "against 26 weeks to resupply" },
-              { v: <CountUp to={9.06} decimals={2} prefix="€" suffix="M" />, l: "revenue exposed", s: "per year" },
-            ].map((f, i) => (
-              <Reveal key={f.l} delay={(i % 4) as 0 | 1 | 2 | 3} className="border border-line p-8">
-                <div className="text-[34px] font-semibold leading-none">{f.v}</div>
-                <div className="mt-4 text-[14px]">{f.l}</div>
-                <div className="mt-1.5 text-[12px] text-dim">{f.s}</div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={1}>
-            <p className="mt-10 max-w-[62ch] leading-relaxed text-mid">
-              The fourth number is the one nobody had. Four point seven weeks of cover
-              against a twenty-six week lead time means the line was already twenty-one
-              weeks exposed — true on the day the letter arrived, and true for months
-              before it.
-            </p>
-          </Reveal>
-        </div>
-      </section>
+      {/* ------------------------------------------------ the worked example, shown */}
+      <Tour />
 
       {/* ------------------------------------------------ trust */}
       <section className="border-b border-line">

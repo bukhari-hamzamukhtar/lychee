@@ -12,9 +12,16 @@
  */
 import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PCN_INBOX } from "@/data/factory";
-import { setActiveDataset, resetDataset, activeDataset, type Dataset } from "./graph";
+import {
+  setActiveDataset,
+  resetDataset,
+  useDemoDataset,
+  activeDataset,
+  type Dataset,
+} from "./graph";
 import type { Pcn } from "./types";
 import type { Assertion, Source } from "./context-graph";
+import { newChat, forkOf, titleFrom, type Chat, type Turn } from "./chats";
 import {
   ingestDocument,
   type IngestStage,
@@ -62,11 +69,13 @@ interface Persisted {
    * example, and only comes into the workspace if it is asked for.
    */
   demo: boolean;
-  /** Documents dropped on the Ask page, kept with the text they were read as. */
+  /** Documents dropped on the Ask page, kept with the text they were read as.
+   *  Shared across conversations: they are files the person added, not things
+   *  a conversation discovered. */
   sources: Source[];
-  /** What has been established, and where each piece of it came from.
-   *  The transcript is deliberately not stored: the claims outlive it. */
-  assertions: Assertion[];
+  /** Conversations, each keeping its own transcript and its own claims. */
+  chats: Chat[];
+  activeChatId: string | null;
 }
 
 const EMPTY: Persisted = {
@@ -76,12 +85,27 @@ const EMPTY: Persisted = {
   bom: null,
   demo: false,
   sources: [],
-  assertions: [],
+  chats: [],
+  activeChatId: null,
 };
 
 /** A browser store is a few megabytes; a stack of OCR-ed PDFs will fill it. */
 const MAX_SOURCES = 12;
 const MAX_ASSERTIONS = 400;
+const MAX_CHATS = 40;
+
+/**
+ * Point the engine at whichever bill of materials this workspace is on.
+ *
+ * An imported one wins; the example is next, and only if it was asked for;
+ * otherwise nothing, and the screens say so rather than showing someone else's
+ * factory as though it were theirs.
+ */
+function applyDataset(state: Persisted) {
+  if (state.bom) setActiveDataset(state.bom.dataset);
+  else if (state.demo) useDemoDataset();
+  else resetDataset();
+}
 
 function read(): Persisted {
   if (typeof window === "undefined") return EMPTY;
@@ -96,7 +120,8 @@ function read(): Persisted {
       bom: parsed.bom ?? null,
       demo: parsed.demo ?? false,
       sources: parsed.sources ?? [],
-      assertions: parsed.assertions ?? [],
+      chats: parsed.chats ?? [],
+      activeChatId: parsed.activeChatId ?? null,
     };
   } catch {
     // A corrupt or blocked store should not take the app down with it.
@@ -154,6 +179,10 @@ interface Workspace {
   notices: Pcn[];
   uploaded: Pcn[];
   demo: boolean;
+  /** Changes whenever the engine is pointed at a different bill of
+   *  materials. Screens compute from module state, so they need
+   *  something reactive to recompute against. */
+  datasetKey: string;
   setDemo: (on: boolean) => void;
   approvals: Approval[];
   assessments: StoredAssessment[];
@@ -168,7 +197,14 @@ interface Workspace {
   saveAssessment: (pcnId: string, payload: unknown) => void;
   getAssessment: (pcnId: string) => unknown | null;
   sources: Source[];
-  assertions: Assertion[];
+  chats: Chat[];
+  chat: Chat | null;
+  openChat: (id: string) => void;
+  startChat: () => void;
+  forkChat: (id: string, carried: Assertion[]) => void;
+  renameChat: (id: string, title: string) => void;
+  deleteChat: (id: string) => void;
+  setTurns: (id: string, turns: Turn[]) => void;
   addSource: (s: Source) => void;
   updateSource: (id: string, patch: Partial<Source>) => void;
   removeSource: (id: string) => void;
@@ -193,14 +229,15 @@ export function useWorkspaceState(): Workspace {
   // and reading it in an initialiser would produce a hydration mismatch.
   useEffect(() => {
     const stored = read();
-    // The engine is a module singleton, so a bill of materials imported in an
-    // earlier visit has to be put back before anything renders against it.
-    if (stored.bom) setActiveDataset(stored.bom.dataset);
+    // The engine is a module singleton, so whichever bill of materials this
+    // workspace is on has to be put back before anything renders against it.
+    applyDataset(stored);
     setState(stored);
     setHydrated(true);
   }, []);
 
   const persist = useCallback((next: Persisted) => {
+    applyDataset(next);
     setState(next);
     write(next);
   }, []);
@@ -250,17 +287,11 @@ export function useWorkspaceState(): Workspace {
   );
 
   const loadBom = useCallback(
-    (bom: ImportedBom) => {
-      setActiveDataset(bom.dataset);
-      persist({ ...read(), bom });
-    },
+    (bom: ImportedBom) => persist({ ...read(), bom }),
     [persist],
   );
 
-  const clearBom = useCallback(() => {
-    resetDataset();
-    persist({ ...read(), bom: null });
-  }, [persist]);
+  const clearBom = useCallback(() => persist({ ...read(), bom: null }), [persist]);
 
   const addSource = useCallback(
     (source: Source) => {
@@ -289,16 +320,90 @@ export function useWorkspaceState(): Workspace {
     [persist],
   );
 
+  /* ------------------------------------------------------- conversations */
+
+  const patchChat = useCallback(
+    (id: string, patch: (c: Chat) => Chat) => {
+      const cur = read();
+      persist({ ...cur, chats: cur.chats.map((c) => (c.id === id ? patch(c) : c)) });
+    },
+    [persist],
+  );
+
+  const openChat = useCallback(
+    (id: string) => persist({ ...read(), activeChatId: id }),
+    [persist],
+  );
+
+  const startChat = useCallback(() => {
+    const cur = read();
+    const c = newChat();
+    persist({ ...cur, chats: [c, ...cur.chats].slice(0, MAX_CHATS), activeChatId: c.id });
+  }, [persist]);
+
+  const forkChat = useCallback(
+    (id: string, carried: Assertion[]) => {
+      const cur = read();
+      const parent = cur.chats.find((c) => c.id === id);
+      if (!parent) return;
+      const child = forkOf(parent, carried);
+      persist({
+        ...cur,
+        chats: [child, ...cur.chats].slice(0, MAX_CHATS),
+        activeChatId: child.id,
+      });
+    },
+    [persist],
+  );
+
+  const renameChat = useCallback(
+    (id: string, title: string) =>
+      patchChat(id, (c) => ({ ...c, title: title.slice(0, 80) || c.title })),
+    [patchChat],
+  );
+
+  const deleteChat = useCallback(
+    (id: string) => {
+      const cur = read();
+      const chats = cur.chats.filter((c) => c.id !== id);
+      persist({
+        ...cur,
+        chats,
+        activeChatId: cur.activeChatId === id ? (chats[0]?.id ?? null) : cur.activeChatId,
+      });
+    },
+    [persist],
+  );
+
+  const setTurns = useCallback(
+    (id: string, turns: Turn[]) =>
+      patchChat(id, (c) => ({
+        ...c,
+        turns,
+        // The first question names the conversation; "New conversation" is a
+        // placeholder, not a title anyone chose.
+        title:
+          c.title === "New conversation" && turns[0]?.role === "user"
+            ? titleFrom(turns[0].content)
+            : c.title,
+      })),
+    [patchChat],
+  );
+
   const addAssertions = useCallback(
     (incoming: Assertion[]) => {
       if (!incoming.length) return;
       const cur = read();
-      // The same claim can be distilled twice out of two conversations; keep one.
-      const seen = new Set(cur.assertions.map((a) => a.subject + "|" + a.claim));
-      const fresh = incoming.filter((a) => !seen.has(a.subject + "|" + a.claim));
-      persist({ ...cur, assertions: [...fresh, ...cur.assertions].slice(0, MAX_ASSERTIONS) });
+      const id = cur.activeChatId;
+      if (!id) return;
+      patchChat(id, (c) => {
+        // The same claim can be distilled twice out of one conversation; keep one.
+        const seen = new Set(c.assertions.map((a) => a.subject + "|" + a.claim));
+        const fresh = incoming.filter((a) => !seen.has(a.subject + "|" + a.claim));
+        return { ...c, assertions: [...fresh, ...c.assertions].slice(0, MAX_ASSERTIONS) };
+      });
     },
-    [persist],
+    [patchChat],
   );
 
   const setDemo = useCallback(
@@ -311,10 +416,12 @@ export function useWorkspaceState(): Workspace {
     [persist],
   );
 
+  /** Forgetting is per conversation: this one's claims and transcript, nothing else. */
   const clearKnowledge = useCallback(() => {
     const cur = read();
-    persist({ ...cur, sources: [], assertions: [] });
-  }, [persist]);
+    if (!cur.activeChatId) return;
+    patchChat(cur.activeChatId, (c) => ({ ...c, turns: [], assertions: [] }));
+  }, [patchChat]);
 
   const startUpload = useCallback(
     (file: File) => {
@@ -376,10 +483,7 @@ export function useWorkspaceState(): Workspace {
     setUpload(NO_UPLOAD);
   }, []);
 
-  const reset = useCallback(() => {
-    resetDataset();
-    persist(EMPTY);
-  }, [persist]);
+  const reset = useCallback(() => persist(EMPTY), [persist]);
 
   return useMemo(
     () => ({
@@ -388,6 +492,11 @@ export function useWorkspaceState(): Workspace {
       uploaded: state.uploaded,
       demo: state.demo,
       setDemo,
+      datasetKey: state.bom
+        ? `bom:${state.bom.name}:${state.bom.importedAt}`
+        : state.demo
+          ? "demo"
+          : "empty",
       approvals: state.approvals,
       assessments: state.assessments,
       hydrated,
@@ -403,7 +512,14 @@ export function useWorkspaceState(): Workspace {
       getAssessment: (pcnId) =>
         state.assessments.find((a) => a.pcnId === pcnId)?.payload ?? null,
       sources: state.sources,
-      assertions: state.assertions,
+      chats: state.chats,
+      chat: state.chats.find((c) => c.id === state.activeChatId) ?? null,
+      openChat,
+      startChat,
+      forkChat,
+      renameChat,
+      deleteChat,
+      setTurns,
       addSource,
       updateSource,
       removeSource,
@@ -433,6 +549,13 @@ export function useWorkspaceState(): Workspace {
       addAssertions,
       clearKnowledge,
       setDemo,
+      openChat,
+      startChat,
+      forkChat,
+      renameChat,
+      deleteChat,
+      setTurns,
+      patchChat,
     ],
   );
 }

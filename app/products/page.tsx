@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { CUSTOMERS, CERTIFICATIONS } from "@/data/factory";
 import {
   allProducts,
   partsUnder,
@@ -10,11 +9,14 @@ import {
   annualMaterialCost,
   allPartsByRisk,
   productAnnualRevenue,
+  activeDataset,
 } from "@/lib/graph";
 import { PageHead, Eyebrow, Figure, Meter, SectionTitle, Tag, eur, num } from "@/components/ui";
+import { useWorkspace } from "@/lib/store";
 
 export default function ProductsPage() {
-  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), []);
+  const { datasetKey } = useWorkspace();
+  const risk = useMemo(() => new Map(allPartsByRisk().map((r) => [r.partId, r.score])), [datasetKey]);
 
   const rows = useMemo(
     () =>
@@ -23,8 +25,8 @@ export default function ProductsPage() {
           const parts = partsUnder(p.id);
           const atRisk = parts.filter((x) => (risk.get(x.partId) ?? 0) >= 70);
           const soleSourced = parts.filter((x) => (risk.get(x.partId) ?? 0) >= 45);
-          const customers = CUSTOMERS.filter((c) => c.productIds.includes(p.id));
-          const certs = CERTIFICATIONS.filter((c) => c.productIds.includes(p.id));
+          const customers = activeDataset().customers.filter((c) => c.productIds.includes(p.id));
+          const certs = activeDataset().certifications.filter((c) => c.productIds.includes(p.id));
           // Worst component risk is the product's own exposure: a line stops for
           // the one part it cannot get, not for the average of its parts.
           const worst = Math.max(0, ...parts.map((x) => risk.get(x.partId) ?? 0));

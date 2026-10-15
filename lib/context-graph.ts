@@ -106,10 +106,14 @@ export function estimateTokens(text: string): number {
 /**
  * The window the agent is given.
  *
- * Smaller than the model's real limit on purpose: the reply needs somewhere to
- * go, and a context packed to the last token leaves no room to answer in.
+ * DeepSeek-V4-Flash takes far more than this; the number is a working budget
+ * rather than the model's ceiling. It is held below the real limit on purpose,
+ * because the reply needs somewhere to go and a context packed to the last
+ * token leaves no room to answer in, and because every token in here is read on
+ * every turn — a window stuffed with documents nobody asked about makes answers
+ * slower and worse, not better.
  */
-export const CONTEXT_BUDGET = 12000;
+export const CONTEXT_BUDGET = 64000;
 
 /** Past this, the next turn is likely to lose the oldest part of the history. */
 export const COMPACT_AT = 0.8;

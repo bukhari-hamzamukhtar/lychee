@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useWorkspace } from "@/lib/store";
-import { impactOf, allPartsByRisk, productAnnualRevenue } from "@/lib/graph";
-import { SUPPLIERS } from "@/data/factory";
+import { impactOf, allPartsByRisk, productAnnualRevenue, activeDataset} from "@/lib/graph";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { PageHead, Tag, Panel, SectionTitle, Figure, SkeletonRows, eur, num, verdictTone, deadline} from "@/components/ui";
 
@@ -23,7 +22,7 @@ export default function NoticesPage() {
         return {
           pcn,
           lead,
-          supplier: SUPPLIERS.find((s) => s.id === pcn.supplierId)?.name ?? pcn.supplierId,
+          supplier: activeDataset().suppliers.find((s) => s.id === pcn.supplierId)?.name ?? pcn.supplierId,
           isUpload: uploaded.some((u) => u.id === pcn.id),
         };
       }),

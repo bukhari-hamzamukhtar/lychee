@@ -71,8 +71,8 @@ export default function ImportPage() {
   return (
     <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
       <PageHead
-        title="Import a bill of materials"
-        meta="your parts, your hierarchy, your column names"
+        title="Bill of materials"
+        meta="The list of what you build, loaded once. Every other screen is computed from it, and every supplier notice is checked against it."
         actions={
           hydrated && bom ? (
             <Button
@@ -110,6 +110,10 @@ export default function ImportPage() {
             }}
           />
           <p className="text-[17px]">Drop in a CSV export from your PLM or ERP</p>
+          <p className="mx-auto mt-2 max-w-[58ch] text-[12.5px] text-dim">
+            This is your parts list, not a supplier letter. Letters go on the{" "}
+            Notices screen.
+          </p>
           <p className="mx-auto mt-3 max-w-[58ch] leading-relaxed text-dim">
             No two companies name their columns the same way. Yours are read as they are
             and matched by meaning — &ldquo;MPN&rdquo;, &ldquo;Manufacturer Part

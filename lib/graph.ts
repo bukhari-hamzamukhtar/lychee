@@ -43,7 +43,23 @@ export const DEMO_DATASET: Dataset = {
   certifications: CERTIFICATIONS,
 };
 
-let active: Dataset = DEMO_DATASET;
+/**
+ * Nothing loaded.
+ *
+ * The default, deliberately. A workspace that opens showing the demo factory's
+ * sixteen components and three parts at risk is making a claim about what this
+ * company builds, and it is wrong. An empty graph produces empty screens, which
+ * is honest, and the screens say how to fill them.
+ */
+export const EMPTY_DATASET: Dataset = {
+  nodes: [],
+  edges: [],
+  suppliers: [],
+  customers: [],
+  certifications: [],
+};
+
+let active: Dataset = EMPTY_DATASET;
 
 const WEEKS_PER_MONTH = 4.333;
 /** How long the company contracts to keep supplying spares. */
@@ -83,8 +99,14 @@ export function setActiveDataset(ds: Dataset) {
   rebuild();
 }
 
-/** Back to the shipped demo factory. */
+/** Back to nothing loaded. */
 export function resetDataset() {
+  active = EMPTY_DATASET;
+  rebuild();
+}
+
+/** The shipped example, when someone asks to see it. */
+export function useDemoDataset() {
   active = DEMO_DATASET;
   rebuild();
 }
