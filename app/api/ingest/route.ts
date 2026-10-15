@@ -2,19 +2,23 @@
  * Turn an uploaded supplier notice into something the engine can assess.
  *
  *   MinerU2.5-Pro on AMD   PDF or scan -> Markdown, per page
- *   Evolus doc-structure   Markdown    -> structured fields
- *   AMD model              fields      -> our notice shape, strict JSON
- *   local                  part match  -> only parts that exist in the BOM
+ *   local                  readers     -> type, last-time buy, reason, parts
+ *   Evolus + AMD model     only when the readers came up short
  *
- * The part match is deliberately the last word. A model may read a part number
+ * The order matters. A supplier notice is a form: it states its category in a
+ * ticked box, prints its last-time-buy date beside a label, and lists its part
+ * numbers. When the document says all of that plainly there is nothing for a
+ * model to add, and asking one anyway costs thirty seconds and a little money
+ * to arrive at an answer that was already on the page. So the deterministic
+ * readers go first and the model is the fallback, not the default.
+ *
+ * That is also what keeps this inside a sixty-second request. A scanned form
+ * takes most of a minute to OCR on its own; it cannot also afford two language
+ * model round trips before anyone sees a result.
+ *
+ * The part match is the last word either way. A model may read a part number
  * that is not in this company's bill of materials, and an assessment of a part
  * we do not build is worse than no assessment.
- *
- * The response is a stream of NDJSON events rather than one JSON object at the
- * end. Reading a scanned PDF takes the better part of a minute, and a request
- * that returns nothing for forty seconds is indistinguishable from one that has
- * died. Each stage announces itself when it starts and again when it finishes,
- * so the page can show what is happening and what it cost while it happens.
  */
 import { NextResponse } from "next/server";
 import { ocr, chat, MODEL } from "@/lib/amd";
@@ -27,6 +31,9 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_BYTES = 8 * 1024 * 1024;
+
+/** Nothing has been heard from the stream for this long; say we are still here. */
+const HEARTBEAT_MS = 8000;
 
 interface Stage {
   name: string;
@@ -88,7 +95,11 @@ export async function POST(req: Request) {
         if (closed) return;
         controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
       };
+      // A long OCR with nothing on the wire looks like a dead connection to
+      // every proxy between here and the browser. Keep something moving.
+      const beat = setInterval(() => send({ t: "ping" }), HEARTBEAT_MS);
       const finish = () => {
+        clearInterval(beat);
         if (!closed) {
           closed = true;
           controller.close();
@@ -108,6 +119,12 @@ export async function POST(req: Request) {
         stages.push(stage);
         send({ t: "stage", stage });
         return out;
+      };
+
+      const note = (name: string, ms: number, text: string) => {
+        const stage: Stage = { name, provider: "local", ms, note: text };
+        stages.push(stage);
+        send({ t: "stage", stage });
       };
 
       const totals = () => ({
@@ -132,77 +149,113 @@ export async function POST(req: Request) {
           return finish();
         }
 
-        // 2. Structured extraction through Evolus.
-        const extracted = await timed(
-          "extract fields",
-          "evolus",
-          () => runTool("doc-structure", text.slice(0, 12000), { format: "json", content: "data" }),
-          (r) => ({ credits: r.creditsConsumed }),
-        ).catch(() => ({ output: "", creditsConsumed: 0, tool: "doc-structure", truncated: false }));
+        // 2. Read the form directly. All of this is deterministic.
+        send({ t: "begin", name: "read the form", provider: "local" });
+        const t1 = Date.now();
+        let partIds = matchParts(text, known);
+        const found = lastBuyDate(text);
+        const kind = classify(text, null);
+        const reason =
+          labelled(text, ["reason for change", "reason for discontinuation", "reason:"]) ||
+          labelled(text, ["description of change"]);
+        const guessedType = kind.from.startsWith("assumed");
 
-        // 3. Normalise to our shape. Low temperature, strict JSON, no prose.
-        const normalised = await timed(
-          "normalise the notice",
-          "amd",
-          () =>
-            chat(
-              [
-                {
-                  role: "system",
-                  content:
-                    "You convert supplier notices into JSON. Output JSON only, no prose. " +
-                    "Use null for anything the document does not state. Never guess a date. " +
-                    'Use type "eol" only when the part is being discontinued outright. A ' +
-                    "change of process, material, plating, assembly site or package marking " +
-                    'is type "change", even when it has a last-time-buy date attached.',
-                },
-                {
-                  role: "user",
-                  content:
-                    `NOTICE TEXT:\n${text.slice(0, 6000)}\n\n` +
-                    (extracted.output
-                      ? `EXTRACTED FIELDS:\n${extracted.output.slice(0, 2000)}\n\n`
-                      : "") +
-                    `Return {"supplier":string|null,"partNumbers":string[],"type":"eol"|"change",` +
-                    `"lastBuyDate":"YYYY-MM-DD"|null,"lastShipDate":"YYYY-MM-DD"|null,` +
-                    `"replacementPart":string|null,"reason":string|null,"language":string}`,
-                },
-              ],
-              { model: MODEL.generate, maxTokens: 500, temperature: 0.1, json: true },
-            ),
-          (r) => ({ costUsd: r.costUsd }),
-        ).catch(() => ({ text: "", costUsd: 0, model: "", finishReason: "error" }));
+        const got: string[] = [];
+        if (partIds.length) got.push(`${partIds.length} part${partIds.length === 1 ? "" : "s"}`);
+        if (found.date) got.push("last-time buy");
+        if (!guessedType) got.push("type");
+        note(
+          "read the form",
+          Date.now() - t1,
+          got.length ? `found ${got.join(", ")} without a model` : "nothing could be read directly",
+        );
 
+        // 3. The model only runs for what the document did not state plainly.
+        const needsModel = !found.date || guessedType || partIds.length === 0;
         let parsed: Record<string, unknown> = {};
-        try {
-          parsed = JSON.parse(normalised.text.replace(/^```(?:json)?|```$/g, "").trim());
-        } catch {
-          /* the deterministic readers below do not depend on this succeeding */
+
+        if (needsModel) {
+          const missing: string[] = [];
+          if (!found.date) missing.push("a last-time-buy date");
+          if (guessedType) missing.push("the kind of notice");
+          if (!partIds.length) missing.push("part numbers in a form we recognise");
+
+          const extracted = await timed(
+            "extract fields",
+            "evolus",
+            () =>
+              runTool("doc-structure", text.slice(0, 12000), { format: "json", content: "data" }),
+            (r) => ({ credits: r.creditsConsumed, note: `looking for ${missing.join(", ")}` }),
+          ).catch(() => ({
+            output: "",
+            creditsConsumed: 0,
+            tool: "doc-structure",
+            truncated: false,
+          }));
+
+          const normalised = await timed(
+            "normalise the notice",
+            "amd",
+            () =>
+              chat(
+                [
+                  {
+                    role: "system",
+                    content:
+                      "You convert supplier notices into JSON. Output JSON only, no prose. " +
+                      "Use null for anything the document does not state. Never guess a date. " +
+                      'Use type "eol" only when the part is being discontinued outright. A ' +
+                      "change of process, material, plating, assembly site or package marking " +
+                      'is type "change", even when it has a last-time-buy date attached.',
+                  },
+                  {
+                    role: "user",
+                    content:
+                      `NOTICE TEXT:\n${text.slice(0, 6000)}\n\n` +
+                      (extracted.output
+                        ? `EXTRACTED FIELDS:\n${extracted.output.slice(0, 2000)}\n\n`
+                        : "") +
+                      `Return {"supplier":string|null,"partNumbers":string[],"type":"eol"|"change",` +
+                      `"lastBuyDate":"YYYY-MM-DD"|null,"lastShipDate":"YYYY-MM-DD"|null,` +
+                      `"replacementPart":string|null,"reason":string|null,"language":string}`,
+                  },
+                ],
+                { model: MODEL.generate, maxTokens: 500, temperature: 0.1, json: true },
+              ),
+            (r) => ({ costUsd: r.costUsd }),
+          ).catch(() => ({ text: "", costUsd: 0, model: "", finishReason: "error" }));
+
+          try {
+            parsed = JSON.parse(normalised.text.replace(/^```(?:json)?|```$/g, "").trim());
+          } catch {
+            /* the deterministic readers above do not depend on this succeeding */
+          }
+
+          // Only ever add to what was read directly; never overwrite it.
+          if (!partIds.length && Array.isArray(parsed.partNumbers)) {
+            partIds = matchParts((parsed.partNumbers as string[]).join(" "), known);
+          }
+        } else {
+          note("skip the model", 0, "the document stated everything; no model was needed");
         }
 
         // 4. Reconcile against the real BOM.
-        send({ t: "begin", name: "match against the bill of materials", provider: "local" });
-        const claimed = Array.isArray(parsed.partNumbers)
-          ? (parsed.partNumbers as string[]).join(" ")
-          : "";
-        const partIds = [...new Set([...matchParts(claimed, known), ...matchParts(text, known)])];
-        const found = lastBuyDate(text);
-        const kind = classify(text, parsed.type);
+        partIds = [...new Set(partIds)];
         const chosen =
+          found.date ??
           (typeof parsed.lastBuyDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.lastBuyDate)
             ? parsed.lastBuyDate
-            : null) ?? found.date;
+            : null);
+        const type = guessedType && parsed.type === "change" ? "change" : kind.type;
+        const typeEvidence = guessedType && parsed.type ? "the model's reading of the text" : kind.from;
 
-        const match: Stage = {
-          name: "match against the bill of materials",
-          provider: "local",
-          ms: 0,
-          note: partIds.length
+        note(
+          "match against the bill of materials",
+          0,
+          partIds.length
             ? `${partIds.length} of our ${known.length} parts named`
             : `none of our ${known.length} parts were named`,
-        };
-        stages.push(match);
-        send({ t: "stage", stage: match });
+        );
 
         if (partIds.length === 0) {
           send({
@@ -240,17 +293,14 @@ export async function POST(req: Request) {
           receivedAt: new Date().toISOString().slice(0, 10),
           language:
             typeof parsed.language === "string" ? parsed.language.slice(0, 2).toLowerCase() : "en",
-          type: kind.type,
-          typeEvidence: kind.from,
+          type,
+          typeEvidence,
           partIds,
           lastBuyDate: chosen,
           lastShipDate: typeof parsed.lastShipDate === "string" ? parsed.lastShipDate : undefined,
           replacementPartId:
             typeof parsed.replacementPart === "string" ? parsed.replacementPart : undefined,
-          reason:
-            labelled(text, ["reason for change", "reason for discontinuation", "reason:"]) ||
-            labelled(text, ["description of change"]) ||
-            (typeof parsed.reason === "string" ? parsed.reason : ""),
+          reason: reason || (typeof parsed.reason === "string" ? parsed.reason : ""),
           rawText: text.slice(0, 4000),
         };
 

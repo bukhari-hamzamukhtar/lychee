@@ -52,6 +52,16 @@ interface Persisted {
   approvals: Approval[];
   assessments: StoredAssessment[];
   bom: ImportedBom | null;
+  /**
+   * Whether the worked example has been switched on.
+   *
+   * Off by default, and deliberately so. Seeded notices and the deadlines that
+   * come with them are a claim about what this user has received, and inventing
+   * that is how someone ends up staring at a countdown for a part they never
+   * ordered. The example lives on the landing page, where it is plainly an
+   * example, and only comes into the workspace if it is asked for.
+   */
+  demo: boolean;
   /** Documents dropped on the Ask page, kept with the text they were read as. */
   sources: Source[];
   /** What has been established, and where each piece of it came from.
@@ -64,6 +74,7 @@ const EMPTY: Persisted = {
   approvals: [],
   assessments: [],
   bom: null,
+  demo: false,
   sources: [],
   assertions: [],
 };
@@ -83,6 +94,7 @@ function read(): Persisted {
       approvals: parsed.approvals ?? [],
       assessments: parsed.assessments ?? [],
       bom: parsed.bom ?? null,
+      demo: parsed.demo ?? false,
       sources: parsed.sources ?? [],
       assertions: parsed.assertions ?? [],
     };
@@ -141,6 +153,8 @@ const NO_UPLOAD: UploadState = {
 interface Workspace {
   notices: Pcn[];
   uploaded: Pcn[];
+  demo: boolean;
+  setDemo: (on: boolean) => void;
   approvals: Approval[];
   assessments: StoredAssessment[];
   hydrated: boolean;
@@ -287,6 +301,16 @@ export function useWorkspaceState(): Workspace {
     [persist],
   );
 
+  const setDemo = useCallback(
+    (on: boolean) => {
+      const cur = read();
+      // Turning the example off takes its notices with it, but never touches
+      // anything the user uploaded or approved themselves.
+      persist({ ...cur, demo: on });
+    },
+    [persist],
+  );
+
   const clearKnowledge = useCallback(() => {
     const cur = read();
     persist({ ...cur, sources: [], assertions: [] });
@@ -359,8 +383,11 @@ export function useWorkspaceState(): Workspace {
 
   return useMemo(
     () => ({
-      notices: [...state.uploaded, ...PCN_INBOX],
+      // Only what this user actually added, unless the example is switched on.
+      notices: state.demo ? [...state.uploaded, ...PCN_INBOX] : state.uploaded,
       uploaded: state.uploaded,
+      demo: state.demo,
+      setDemo,
       approvals: state.approvals,
       assessments: state.assessments,
       hydrated,
@@ -405,6 +432,7 @@ export function useWorkspaceState(): Workspace {
       removeSource,
       addAssertions,
       clearKnowledge,
+      setDemo,
     ],
   );
 }

@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
 import { Wordmark } from "./Logo";
-import { deadline } from "./ui";
-import { impactOf } from "@/lib/graph";
 
 /**
  * Fixed 64px bar with a permanent bottom rule.
@@ -28,19 +26,9 @@ const TABS = [
   { href: "/ask", label: "Ask" },
 ] as const;
 
-const ASOF = new Date("2026-10-14T00:00:00Z");
-
 export function Nav() {
   const pathname = usePathname();
   const { notices, approvals, hydrated, upload } = useWorkspace();
-
-  const soonest = hydrated
-    ? notices
-        .flatMap((p) => p.partIds.map((id) => impactOf(id, p.lastBuyDate, ASOF)))
-        .filter((r): r is NonNullable<typeof r> => r !== null)
-        .map((r) => r.daysToLastBuy)
-        .sort((a, b) => a - b)[0]
-    : undefined;
 
   const count = (href: string) =>
     href === "/notices" ? notices.length : href === "/approvals" ? approvals.length : null;
@@ -93,8 +81,10 @@ export function Nav() {
         </nav>
 
         <div className="ml-auto hidden shrink-0 items-center gap-2.5 lg:flex">
-          {/* A document being read outranks the deadline: it is happening now,
-              and it is the reason someone might have left this page. */}
+          {/* Only ever says something when something is actually happening.
+              A standing countdown here was announcing a deadline to people who
+              had not uploaded anything, which reads as the app inventing work
+              for them rather than reporting theirs. */}
           {upload.status === "running" ? (
             <UploadTicker since={upload.startedAt} what={upload.current} />
           ) : upload.status === "done" && upload.pcnId ? (
@@ -105,31 +95,7 @@ export function Nav() {
               <span className="h-1.5 w-1.5 rounded-full bg-ok" />
               document read
             </Link>
-          ) : (
-            <>
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  soonest !== undefined && soonest < 60 ? "animate-pulse-soft bg-accent" : "bg-ok"
-                }`}
-              />
-              <span className="text-[14px] text-dim">
-                {soonest !== undefined ? (
-                  deadline(soonest).passed ? (
-                    <>
-                      last buy <span className="text-fg">{deadline(soonest).text}</span>
-                    </>
-                  ) : (
-                    <>
-                      next deadline{" "}
-                      <span className="tabular-nums text-fg">{deadline(soonest).text}</span>
-                    </>
-                  )
-                ) : (
-                  "all clear"
-                )}
-              </span>
-            </>
-          )}
+          ) : null}
         </div>
       </div>
     </header>
