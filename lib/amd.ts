@@ -56,7 +56,7 @@ export const selfHostedGeneration = () => Boolean(process.env.AMD_GENERATE_BASE_
  */
 export const MODEL = {
   get generate() {
-    return process.env.AMD_MODEL_GENERATE ?? "DeepSeek-V4-Flash";
+    return process.env.AMD_MODEL_GENERATE ?? "Gemma-4-31B-IT";
   },
   get fallback() {
     return process.env.AMD_MODEL_FALLBACK ?? "DeepSeek-V4-Flash";
@@ -150,6 +150,18 @@ export interface ChatOpts {
   json?: boolean;
   /** Omitted by default; see acceptsReasoningEffort. */
   reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high";
+  /**
+   * Try this model if the first one fails outright.
+   *
+   * Gemma was removed from the catalogue entirely on 15 October and returned
+   * on the 16th. While it is the default generator, every call that matters
+   * should survive it disappearing again mid-judging — so a hard failure
+   * retries once on the fallback rather than propagating.
+   *
+   * Only for errors. A model that answers badly is a different problem, and
+   * chatGuarded handles that one.
+   */
+  fallbackModel?: string;
 }
 
 export async function chat(
@@ -157,6 +169,7 @@ export async function chat(
   opts: ChatOpts = {},
 ): Promise<{ text: string; costUsd: number; model: string; finishReason: string }> {
   const model = opts.model ?? MODEL.generate;
+  const spare = opts.fallbackModel ?? MODEL.fallback;
 
   const body: Record<string, unknown> = {
     model,
@@ -172,14 +185,28 @@ export async function chat(
     body.reasoning_effort = opts.reasoningEffort;
   }
 
-  const data = await post("/chat/completions", body, 180_000);
-  const choice = data?.choices?.[0];
-  return {
-    text: choice?.message?.content ?? "",
-    costUsd: data?.usage?.cost ?? 0,
-    model,
-    finishReason: choice?.finish_reason ?? "unknown",
+  const send = async (which: string) => {
+    const data = await post("/chat/completions", { ...body, model: which }, 180_000);
+    const choice = data?.choices?.[0];
+    return {
+      text: choice?.message?.content ?? "",
+      costUsd: data?.usage?.cost ?? 0,
+      model: which,
+      finishReason: choice?.finish_reason ?? "unknown",
+    };
   };
+
+  try {
+    return await send(model);
+  } catch (err) {
+    // A model that has been withdrawn answers 400 "not supported" or 404, and
+    // post() has already exhausted its retries on anything transient. Falling
+    // back here is the difference between a degraded answer and none at all.
+    if (spare && spare !== model) {
+      return await send(spare);
+    }
+    throw err;
+  }
 }
 
 /**

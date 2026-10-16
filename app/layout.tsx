@@ -39,13 +39,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <span className="text-[13px] font-medium">LastBuy</span>
                 </div>
                 <p className="max-w-2xl text-[12.5px] leading-relaxed text-dim">
-                  Impact figures are computed from the bill of materials by graph traversal,
-                  not generated. Documents are read and memos written by open models served
-                  on AMD GPUs, orchestrated through Evolus. Nothing is dispatched without a
-                  named approver. The workspace starts empty; the example factory is
-                  synthetic and is labelled wherever it appears.
+                  Impact figures are computed from the bill of materials by graph
+                  traversal, not generated. Nothing is dispatched without a named approver.
+                  The workspace starts empty; the example factory is synthetic and is
+                  labelled wherever it appears.
                 </p>
               </div>
+              <dl className="grid gap-x-8 gap-y-2 border-t border-line pt-6 text-[12px] sm:grid-cols-3">
+                <div>
+                  <dt className="text-dim">Inference</dt>
+                  <dd className="mt-0.5 font-mono text-mid">developer.amd.com.cn/radeon</dd>
+                  <dd className="text-dim">MinerU2.5-Pro · Gemma-4-31B-IT on AMD Instinct</dd>
+                </div>
+                <div>
+                  <dt className="text-dim">Evolus workspace</dt>
+                  <dd className="mt-0.5 font-mono text-mid">lychee</dd>
+                  <dd className="text-dim">agent, AI Tools, knowledge library</dd>
+                </div>
+                <div>
+                  <dt className="text-dim">Impact engine</dt>
+                  <dd className="mt-0.5 font-mono text-mid">lib/graph.ts</dd>
+                  <dd className="text-dim">deterministic, no model involved</dd>
+                </div>
+              </dl>
             </div>
           </footer>
           <ThemeToggle />

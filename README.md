@@ -158,22 +158,47 @@ Generation can additionally be served from a Gemma instance on an AMD Developer 
 droplet by setting one environment variable; OCR stays on Token Factory because MinerU
 is only served there. See [docs/AMD-COMPUTE.md](docs/AMD-COMPUTE.md).
 
-### A note on Gemma
+### Gemma, and why it is the generator
 
-`Gemma-4-31B-IT` would be the preferred generator — it is the model the Google partner
-prize asks for, and the code switches to it with one environment variable. It is not
-usable through Token Factory:
+`Gemma-4-31B-IT` is Google's open model, served on AMD Instinct GPUs through
+Token Factory. It is the default generator here — which also makes this project
+eligible for the Google partner prize — and getting there took three days of it
+being unusable:
 
-- **14 Oct** — present, but collapsing into repeated fragments and leaking raw
-  `<|tool_call>` on every call, short or long.
-- **15 Oct, 20:50** — still listed in `/models`, 12 models in the catalogue.
-- **15 Oct, 21:50** — **removed.** 11 models, nothing matching `/emma/i` across three
-  consecutive checks. Asking by name returns `400 ... not supported`; every prefixed
-  variant returns 404.
+| | |
+|---|---|
+| 14 Oct | present, but collapsing into repeated fragments and leaking raw `<\|tool_call>` on every call |
+| 15 Oct, 20:50 | listed in `/models`, 12 models in the catalogue |
+| 15 Oct, 21:50 | **withdrawn.** 11 models, nothing matching `/emma/i`, three consecutive checks. By name: `400 not supported` |
+| 16 Oct | restored by AMD, and working |
 
-`scripts/probe-gemma-short.ts` and `scripts/probe-gemma-id.ts` reproduce both states.
-The default is therefore a model that works, and the route to Gemma now runs through a
-droplet we serve ourselves — see [docs/AMD-COMPUTE.md](docs/AMD-COMPUTE.md).
+It now passes every shape this pipeline asks of it — a one-word answer, strict
+JSON for notice normalisation, and a long grounded memo — and it is markedly
+quicker than the alternative, at roughly two seconds against seventeen:
+
+```
+npx tsx scripts/probe-gemma-fitness.ts
+
+  pass  short answer                1.7s    5 chars
+  pass  strict JSON, notice shape   3.9s  130 chars
+  pass  memo, long generation      11.7s  1296 chars
+```
+
+A model that has been withdrawn once can be withdrawn again, so the fallback is
+load-bearing rather than decorative: a hard failure on the generator retries
+once on `DeepSeek-V4-Flash` inside `chat()`. Prove it by asking for a model that
+does not exist — the answers still arrive:
+
+```
+npx tsx scripts/probe-gemma-fitness.ts Totally-Not-A-Model
+```
+
+`scripts/probe-gemma-id.ts` reproduces the withdrawal, and
+`scripts/probe-gemma-short.ts` the original degeneration.
+
+One limitation, reported by another team and not contradicted here: Gemma's
+**vision** requests were returning HTTP 500 through 16 October. This pipeline
+never sends it an image — OCR is MinerU2.5-Pro — so it does not arise.
 
 ## Evolus
 
