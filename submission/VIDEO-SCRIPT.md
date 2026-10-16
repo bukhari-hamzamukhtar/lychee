@@ -1,147 +1,171 @@
-# Demo video — shot list and script
+# Video — narration and the prompt to build it
 
-**Target 3:30. Hard ceiling 5:00.** lablab's own guidance says some judges stop watching
-at three minutes, so everything that matters is in the first two.
+Two things in here. The **narration** is what gets said, written to be read out
+loud at a normal speed. The **master prompt** at the bottom is what goes into
+NotebookLM, along with this file and the frames in `screenshots/`.
 
-Record at 1920x1080, browser at 100% zoom. Narrate over the screen; no face camera,
-no music.
-
-**Before recording:**
-- Open the deployed URL, not localhost. Judges will click the link; show them the thing
-  they will click.
-- Run one assessment and discard the take. The first call compiles the route and takes
-  twice as long.
-- Clear the workspace so Approvals starts empty — the approval at the end lands better
-  if the queue was empty before it.
-- Have `pcn-test.pdf` (or any supplier notice PDF) on the desktop, ready to drag.
+Target: **3 minutes**. Judges watch a lot of these. Short and specific beats
+long and thorough.
 
 ---
 
-## 0:00 – 0:25 · The problem
+## Narration
 
-> Every factory gets these. A supplier emails a PDF saying a component is discontinued,
-> and you have thirty-four days to place a final order. After that you can never buy
-> that part again.
+Timings are rough. Read it like you are explaining it to a friend who works in
+manufacturing, not like you are presenting to a room.
+
+### 0:00 — 0:20 · the problem
+> **[frame: 11-landing-hero-dark.png]**
+
+A supplier sends you a letter. It says one of your parts is being discontinued,
+and you have thirty-four days to place a final order.
+
+Now someone has to work out what that actually breaks. Which products use this
+part. Which customers you promised spares to. Which certificates have to be
+redone. How many to buy before the door shuts.
+
+That takes days, and it usually pulls in three people. And if you miss the date,
+the part is gone. You redesign the product, or you stop building it.
+
+### 0:20 — 0:40 · what it does
+> **[frames: 01-landing-hero.png, then 02-notices-empty.png]**
+
+This is LastBuy. You drop the letter in, and it tells you what breaks.
+
+It reads the PDF — a scan, a photo, any language. It finds your part numbers. It
+traces each one up through your bill of materials to every finished product that
+contains it. Then it prices the decision: how many to buy, what that costs, and
+what it protects.
+
+### 0:40 — 1:05 · the graph
+> **[frame: 20-landing-full.png — hold on the fan diagram]**
+
+Here is the part that matters. The money is not written by a model.
+
+One isolator sits under five finished products. We walk the bill of materials
+from the part up to each of them, multiplying the quantities along the way. Five
+products. Nine million euros of revenue behind them, every year.
+
+Ask it again tomorrow and you get the same number, because it is arithmetic. The
+models read documents and write the memo. They never make a number you act on.
+
+### 1:05 — 1:30 · a real letter
+> **[frame: 13-notice-impact.png]**
+
+We tested it on a letter nobody wrote for us — a real Hittite Microwave notice
+from 2014. Four hundred and eighty-eight kilobytes, scanned.
+
+Here is the thing we got wrong first. We sent the whole document to the model,
+and the run took a hundred and sixty-one seconds. Vercel kills a request at
+sixty. So it did not just cost more — it failed.
+
+So we looked at the document again. A notice like this is a form. It ticks its
+own category. It prints its last-time-buy date next to a label. So we read the
+form first, and only ask the model for what the page does not say.
+
+Twenty-seven seconds. Five parts matched. Last-time buy, second of February
+twenty-fourteen, read straight off its own label. No credits spent.
+
+### 1:30 — 1:55 · ask
+> **[frame: 14-ask-in-use.png]**
+
+You can also just ask it things. Drop in as many documents as you want and ask
+across all of them at once.
+
+Every answer tells you where it came from. If it read something in a document,
+the sentence ends with the filename. If the engine computed it, it ends with
+"engine". Those two never get mixed up.
+
+And when the context window fills, we do not summarise the chat. We turn it into
+claims — each one with its subject, how it is known, and which document it came
+from — and then we throw the messages away. A summary cannot be checked. A claim
+can.
+
+### 1:55 — 2:20 · what it runs on
+> **[frames: 03-parts.png, then 09-ask.png — the strip under the nav is on both]**
+
+Everything runs on AMD. Gemma reads the notices and writes the memos, served on
+AMD Instinct through Token Factory. MinerU does the OCR, same place. One file in
+the whole repository talks to a model at all — grep it for OpenAI or Anthropic
+and nothing comes back.
+
+The certification rules come from an Evolus agent, in a workspace called lychee,
+pointed at that same AMD model. It cites the standard and the clause every time,
+and when the documents do not cover something, it says so instead of guessing.
+
+### 2:20 — 2:40 · cost
+> **[frame: 20-landing-full.png — hold on the cost section]**
+
+A complete assessment costs about a hundredth of a cent.
+
+That number matters more than it looks. Most teams triage — they only look at
+the notices that seem important. That is exactly how the expensive ones get
+missed. At this price, you read every single one.
+
+### 2:40 — 3:00 · close
+> **[frame: 21-landing-full-dark.png — hold on the closing line]**
+
+Obsolescence management is already an industry. Every tool in it is a database
+you search — you type in a part number, and it tells you facts about the part.
+
+This one reads the letter and tells you what breaks.
+
+It is live, the code is public, and every figure on screen is one you can check.
+
+---
+
+## Frames, in order
+
+| # | file | what it is |
+|---|---|---|
+| 1 | `11-landing-hero-dark.png` | opening, dark |
+| 2 | `01-landing-hero.png` | the product, light |
+| 3 | `02-notices-empty.png` | the dropzone |
+| 4 | `20-landing-full.png` | full page — the fan diagram and the cost section |
+| 5 | `13-notice-impact.png` | one notice, assessed |
+| 6 | `14-ask-in-use.png` | Ask, with a cited answer |
+| 7 | `03-parts.png` | risk scored before any notice arrives |
+| 8 | `09-ask.png` | the partner strip under the nav |
+| 9 | `08-bill-of-materials.png` | bring your own BOM |
+| 10 | `21-landing-full-dark.png` | closing, dark |
+
+Also in `screenshots/`: products, suppliers, certifications, approvals, sign-in,
+and full-page captures of parts, products, certifications, Ask and the importer.
+Use them if a section needs more to look at.
+
+---
+
+## Master prompt for NotebookLM
+
+Paste this, attach `VIDEO-SCRIPT.md`, and attach the frames from
+`submission/screenshots/`.
+
+> Make a three-minute product video for **LastBuy**, a tool for manufacturers.
 >
-> Working out what it actually breaks takes days. Which products use it. How many go in
-> each. Which customers are under contract. Whether a certification names it. How much
-> stock is left.
-
-**On screen:** the Notices inbox. Three notices in German, Japanese and English, and the
-portfolio strip above them — nine million euros exposed, soonest deadline thirty-four
-days.
-
-Do not say "AI" yet. Say the problem.
-
----
-
-## 0:25 – 1:00 · Drop in a document it has never seen
-
-This is the strongest opening we have. Do it before anything else.
-
-**On screen:** drag the PDF onto the dropzone. Let the stages tick through live.
-
-> This is a supplier notice it has never seen. It is read by MinerU on AMD GPUs, the
-> fields come out through Evolus, and then the part numbers are checked against our own
-> bill of materials.
-
-**On screen:** it lands on the new notice's page.
-
-> Seventeen seconds. Six hundredths of a cent of AMD inference, and about two Evolus
-> credits. Cheap enough to run on every notice that arrives, which is the point.
-
-If you have time for one extra beat, drop a document that names **no** part you build and
-show it being refused. "It read the file and told me there is nothing here to assess"
-is a strong second-order signal.
-
----
-
-## 1:00 – 1:50 · What it actually breaks
-
-**On screen:** the impact panel. Pause on the four numbers.
-
-> Five products affected. Thirteen of these in a single MD-7500, because the part gets
-> there by two different routes — through the gate driver module, and again on the
-> control board.
-
-**On screen:** point at the two paths printed under MD-7500.
-
-> Every route is printed. You can check that thirteen by hand in five seconds. This is
-> arithmetic over a graph, not a model guessing — ask a model to do this and it invents
-> quantities.
-
-Then the line the whole demo exists for:
-
-> And here is what nobody knew. Four point seven weeks of stock, against a twenty-six
-> week lead time. They are already twenty-one weeks short. That has nothing to do with
-> the deadline in the letter. It is true today, and their current process would never
-> have surfaced it.
-
----
-
-## 1:50 – 2:30 · The agent
-
-**On screen:** click **Assess notice**. Let the stages run. Do not cut.
-
-> Evolus translates it, extracts the fields, the engine propagates, an AMD-hosted model
-> writes the memo, and an Evolus agent rules on the certifications.
-
-**On screen:** the per-stage provider badges and costs, then the memo, then the ruling.
-
-> The agent cites the clause — EN 61800-3, six three two. It runs on the AMD endpoint
-> connected to the workspace, and answers only from the company's own approval records.
-
----
-
-## 2:30 – 2:50 · The refusal
-
-> Ask it something those documents do not cover, and it will not answer.
-
-**On screen:** the thermal derating reply, or a prepared screenshot of it.
-
-> No derating curve in the library, so it says so and sends you to an engineer. That is
-> what you need before anything goes near a one-point-four-million-euro purchase order.
-
-Twenty seconds, worth more than any feature. Do not cut it.
-
----
-
-## 2:50 – 3:10 · The gate, and the queue
-
-**On screen:** the two drafts, then **Approve**. Then click through to **Approvals**.
-
-> It drafts the order to the supplier and the notice to the six affected customers. And
-> then it stops. A person commits the spend, and the approval is recorded against the
-> part with the authority level the procedure requires. The agent prepares the decision.
-> It does not take it.
-
----
-
-## 3:10 – 3:30 · Before the letter arrives
-
-**On screen:** the **Parts** tab. Let the risk meters land.
-
-> And it does not wait to be told. Every component is scored from its position in the
-> graph and its supplier's history, so the work queue exists before a notice forces it.
-
-> Obsolescence management is already an industry — SiliconExpert, Z2Data, IHS. Every one
-> of them is a database you search. This is the first that reads the incoming notice and
-> tells you what breaks.
+> **Use the narration in VIDEO-SCRIPT.md as the script, close to word for word.**
+> Do not rewrite it into marketing language. It is deliberately plain and spoken,
+> and that is the point. If you need to trim for timing, cut whole sentences
+> rather than rephrasing the ones you keep.
 >
-> Days to twenty seconds, for a tenth of a cent.
-
-End there. No thank-you slide, no roadmap, no team photo.
-
----
-
-## Mistakes to avoid
-
-- **Do not narrate the UI.** "Here I click the button" wastes the budget. Say what it
-  means, not what you are doing.
-- **Do not cut away during a live run.** Watching the stages tick is the proof it is
-  real. Edited-out latency reads as faked.
-- **Do not open with the stack.** Problem first, then the upload. The technology is how,
-  not why.
-- **Do not apologise for synthetic data.** It is stated in the README and the submission.
-  In the video it is a distraction.
-- **Do not show localhost.** Show the deployed URL.
+> **Voice:** one narrator. Calm and straightforward, a person explaining their
+> own work. Not an advertisement. No hype, no rising excitement at the end,
+> slightly dry. Where a number appears, say it plainly and let it sit.
+>
+> **Pictures:** use the attached screenshots in the order the script marks them.
+> They are real captures of the running product at 1920x1080 — show them full
+> frame and let them hold. A slow pan down the tall full-page captures
+> (`20-landing-full`, `21-landing-full-dark`) is good. Everything else should be
+> static or very nearly. No zoom bounces, no sliding transitions, no stock
+> footage, no generic "AI" or "technology" imagery, and no music that builds.
+>
+> **Look:** the product is black on white with one red accent, and dark grey with
+> one orange accent. Match that. Open and close on the dark frames and keep the
+> middle light. Any text you put on screen should be plain sans-serif, small, and
+> in a corner — the screenshots are the content, not a backdrop for captions.
+>
+> **Pacing:** about twenty to twenty-five seconds a section, eight sections.
+> Leave a breath between sections rather than cutting straight through.
+>
+> **Do not:** add a logo animation, add a call-to-action card at the end, add
+> captions that restate the narration word for word, speed up or time-lapse the
+> screenshots, or put a presenter on screen.
