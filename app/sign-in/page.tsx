@@ -53,7 +53,7 @@ export default function SignInPage() {
     <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-12">
       <PageHead
         title={mode === "in" ? "Sign in" : "Create an account"}
-        meta="Keeps one person's bill of materials separate from another's on a shared machine."
+        meta="Needed to ask Vigil or assess a notice, and it keeps one person's workspace separate from another's on a shared device."
       />
 
       <div className="grid gap-14 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -140,7 +140,7 @@ export default function SignInPage() {
           <p>
             In this browser, and nowhere else. There is no server behind this screen, so an
             account made here will not be found on another machine, and signing out does not
-            put your bill of materials beyond the reach of anyone who can open this laptop.
+            put your bill of materials beyond the reach of anyone who can open this device.
           </p>
           <p>
             Passwords are salted and hashed rather than stored, which is the right habit

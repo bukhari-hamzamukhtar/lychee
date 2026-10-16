@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useAccountGate } from "./RequireAccount";
 import { useWorkspace } from "@/lib/store";
 import type { ImpactReport } from "@/lib/types";
 import { Tag, Button, Panel, SectionTitle, eur, num } from "./ui";
@@ -86,6 +88,8 @@ export function AssessPanel({
   const [tab, setTab] = useState<"supplier" | "customer">("supplier");
   const approved = report ? isApproved(pcnId, report.partId) : false;
 
+  const { allowed } = useAccountGate();
+
   return (
     <Panel className="overflow-hidden">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
@@ -95,9 +99,20 @@ export function AssessPanel({
             Translate, extract, propagate, rule, draft. Nothing sends without approval.
           </p>
         </div>
-        <Button onClick={onRun} disabled={running}>
-          {running ? "Working…" : result ? "Run again" : "Assess notice"}
-        </Button>
+        {allowed ? (
+          <Button onClick={onRun} disabled={running}>
+            {running ? "Working…" : result ? "Run again" : "Assess notice"}
+          </Button>
+        ) : (
+          // Running the agent spends inference on the team's shared key and
+          // records an assessment against somebody's workspace.
+          <Link
+            href="/sign-in"
+            className="border border-fg px-4 py-2 text-[13.5px] text-fg transition-opacity hover:opacity-70"
+          >
+            Sign in to assess
+          </Link>
+        )}
       </header>
 
       {error && (

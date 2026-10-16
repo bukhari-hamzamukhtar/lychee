@@ -34,6 +34,7 @@ import {
   type Standing,
 } from "@/lib/context-graph";
 import { Button, Eyebrow, PageHead, SectionTitle, num } from "@/components/ui";
+import { RequireAccount } from "@/components/RequireAccount";
 
 const OCR_TYPES = /\.(pdf|png|jpe?g|webp)$/i;
 const TEXT_TYPES = /\.(csv|tsv|txt|md|json)$/i;
@@ -347,16 +348,13 @@ export default function AskPage() {
       <PageHead
         title="Ask"
         meta="Bring documents to Vigil and ask across all of them and your bill of materials at once."
-        actions={
-          <div className="flex items-center gap-3">
-            <Button tone="quiet" onClick={() => void fork()} disabled={!chat || busy !== null}>
-              {busy === "fork" ? "Forking" : "Fork"}
-            </Button>
-            <Button onClick={startChat}>New conversation</Button>
-          </div>
-        }
+        actions={<Button onClick={startChat}>New conversation</Button>}
       />
 
+      <RequireAccount
+        what="Asking Vigil"
+        why="Conversations, the documents you add and what they establish are kept against your account, and every answer spends inference on the team's AMD key. Reading the workspace needs no account — none of it calls a model."
+      >
       <div className="grid gap-10 lg:grid-cols-[210px_minmax(0,1fr)_340px]">
         {/* ------------------------------------------------- conversation list */}
         <aside className="min-w-0">
@@ -396,28 +394,65 @@ export default function AskPage() {
           </ul>
 
           {chat && (
-            <div className="mt-4 space-y-2">
+            <div className="mt-5 space-y-2.5 border-t border-line pt-4">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-dim">
+                This conversation
+              </p>
               <button
                 onClick={() => {
                   const t = window.prompt("Name this conversation", chat.title);
                   if (t !== null) renameChat(chat.id, t);
                 }}
-                className="block text-[12px] text-dim transition-colors hover:text-fg"
+                className="block text-[12.5px] text-dim transition-colors hover:text-fg"
               >
                 Rename
               </button>
               <button
-                onClick={clearKnowledge}
-                className="block text-[12px] text-dim transition-colors hover:text-fg"
+                onClick={() => void fork()}
+                disabled={busy !== null}
+                className="block text-[12.5px] text-dim transition-colors hover:text-fg disabled:opacity-50"
               >
-                Forget everything here
+                {busy === "fork" ? "Forking" : "Fork into a new conversation"}
+              </button>
+              <button
+                onClick={() => {
+                  // Destructive and not recoverable, so it asks. Distilling is
+                  // the non-destructive neighbour and must not be confused with it.
+                  const n = chat.assertions.length;
+                  const loses = [
+                    chat.turns.length ? `${chat.turns.length} message${chat.turns.length === 1 ? "" : "s"}` : "",
+                    n ? `${n} established claim${n === 1 ? "" : "s"}` : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" and ");
+                  if (!loses) return;
+                  if (
+                    window.confirm(
+                      `Forget "${chat.title}"?
+
+This deletes ${loses}. ` +
+                        `Your documents and your other conversations are not touched.
+
+` +
+                        `To keep what this conversation established, close this and use ` +
+                        `"Distil the transcript" instead.`,
+                    )
+                  ) {
+                    clearKnowledge();
+                  }
+                }}
+                className="block text-[12.5px] text-crit transition-opacity hover:opacity-70"
+              >
+                Forget this conversation
               </button>
               {chats.length > 1 && (
                 <button
-                  onClick={() => deleteChat(chat.id)}
-                  className="block text-[12px] text-dim transition-colors hover:text-crit"
+                  onClick={() => {
+                    if (window.confirm(`Delete "${chat.title}" entirely?`)) deleteChat(chat.id);
+                  }}
+                  className="block text-[12.5px] text-crit transition-opacity hover:opacity-70"
                 >
-                  Delete this conversation
+                  Delete it
                 </button>
               )}
             </div>
@@ -594,7 +629,6 @@ export default function AskPage() {
           <ContextGauge
             use={use}
             onCompact={() => void compact()}
-            onFork={() => void fork()}
             busy={busy}
             canCompact={turns.length > 0}
           />
@@ -628,6 +662,7 @@ export default function AskPage() {
           </section>
         </div>
       </div>
+      </RequireAccount>
     </div>
   );
 }
@@ -643,13 +678,11 @@ export default function AskPage() {
 function ContextGauge({
   use,
   onCompact,
-  onFork,
   busy,
   canCompact,
 }: {
   use: ReturnType<typeof measureContext>;
   onCompact: () => void;
-  onFork: () => void;
   busy: null | "distil" | "fork";
   canCompact: boolean;
 }) {
@@ -696,24 +729,19 @@ function ContextGauge({
             and discard the rest.
           </p>
         )}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            tone={use.shouldCompact ? "accent" : "quiet"}
-            onClick={onCompact}
-            disabled={busy !== null || !canCompact}
-          >
-            {busy === "distil" ? "Distilling" : "Distil and clear"}
-          </Button>
-          <Button tone="quiet" onClick={onFork} disabled={busy !== null}>
-            {busy === "fork" ? "Forking" : "Fork"}
-          </Button>
-        </div>
+        <Button
+          tone={use.shouldCompact ? "accent" : "quiet"}
+          onClick={onCompact}
+          disabled={busy !== null || !canCompact}
+        >
+          {busy === "distil" ? "Distilling" : "Distil the transcript"}
+        </Button>
       </div>
 
       <p className="mt-3 text-[11.5px] leading-relaxed text-dim">
         Grey survives. <span className="text-accent">Orange</span> is the transcript,
-        which does not. Distilling clears it here; forking starts a new conversation with
-        the claims and an empty window.
+        which does not. Distilling turns the messages into claims and then deletes the
+        messages — what was established is kept.
       </p>
     </section>
   );

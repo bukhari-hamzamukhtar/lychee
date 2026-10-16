@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Nav } from "@/components/Nav";
 import { ExampleBanner } from "@/components/ExampleBanner";
+import { RunsOn } from "@/components/RunsOn";
 import { NoDataNotice } from "@/components/NoDataNotice";
 import { ThemeToggle, THEME_SCRIPT } from "@/components/ThemeToggle";
 import { Assistant } from "@/components/Assistant";
@@ -28,11 +29,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-bg font-sans text-[16.5px] leading-relaxed antialiased">
         <Providers>
           <Nav />
+          <RunsOn />
           <ExampleBanner />
           <NoDataNotice />
           {children}
+          {/* The assistant and the theme toggle are fixed to the bottom corners
+              and will sit on top of whatever is underneath them. The footer is
+              the last thing on every page, so it is the thing they cover —
+              extra room at the bottom keeps the attribution readable. */}
           <footer className="border-t border-line">
-            <div className="mx-auto max-w-[1320px] px-8 py-12">
+            <div className="mx-auto max-w-[1320px] px-8 pb-24 pt-12 sm:pb-20">
               <div className="flex flex-wrap items-start justify-between gap-8">
                 <div className="flex items-center gap-2.5 text-dim">
                   <Logo size={22} />

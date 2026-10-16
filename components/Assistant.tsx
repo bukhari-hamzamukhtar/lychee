@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAccountGate } from "./RequireAccount";
 import { usePathname } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
 import { buildScreenContext } from "@/lib/screen-context";
@@ -45,6 +46,7 @@ export function Assistant() {
   const pathname = usePathname();
   const { notices, uploaded, approvals } = useWorkspace();
 
+  const { allowed } = useAccountGate();
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -96,6 +98,11 @@ export function Assistant() {
       setBusy(false);
     }
   }
+
+  // Every turn spends inference on the team's shared key, so Vigil is not
+  // offered to someone the workspace cannot attribute it to. Reading the
+  // workspace stays open; none of that calls a model.
+  if (!allowed) return null;
 
   return (
     <>

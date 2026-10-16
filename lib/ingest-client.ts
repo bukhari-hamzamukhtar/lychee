@@ -20,6 +20,8 @@ export interface IngestStage {
   credits?: number;
   costUsd?: number;
   note?: string;
+  /** Which model served this stage, when one did. */
+  model?: string;
 }
 
 export interface IngestTotals {

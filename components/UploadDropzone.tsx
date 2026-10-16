@@ -126,7 +126,12 @@ export function UploadDropzone() {
                   >
                     {s.provider === "local" ? "engine" : s.provider}
                   </span>
-                  <span className="flex-1 text-mid">{s.name}</span>
+                  <span className="flex-1 text-mid">
+                    {s.name}
+                    {s.model && (
+                      <span className="ml-2 font-mono text-[11px] text-dim">{s.model}</span>
+                    )}
+                  </span>
                   {s.note && <span className="text-[11.5px] text-dim">{s.note}</span>}
                   <span className="tabular-nums text-dim">{(s.ms / 1000).toFixed(1)}s</span>
                 </li>

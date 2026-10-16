@@ -42,6 +42,8 @@ interface Stage {
   credits?: number;
   costUsd?: number;
   note?: string;
+  /** Named per stage so the screen says which model did which piece of work. */
+  model?: string;
 }
 
 const DEMO_PARTS = NODES.filter((n) => n.kind === "part").map((n) => n.id);
@@ -135,8 +137,11 @@ export async function POST(req: Request) {
 
       try {
         // 1. OCR on AMD. MinerU takes a data URI, so nothing has to be hosted.
-        const read = await timed("read the document", "amd", () =>
-          ocr(`data:${mime};base64,${base64}`),
+        const read = await timed(
+          "read the document",
+          "amd",
+          () => ocr(`data:${mime};base64,${base64}`),
+          () => ({ model: MODEL.ocr }),
         );
         const text = read.markdown.trim();
         if (!text) {
@@ -222,7 +227,7 @@ export async function POST(req: Request) {
                 ],
                 { model: MODEL.generate, maxTokens: 500, temperature: 0.1, json: true },
               ),
-            (r) => ({ costUsd: r.costUsd }),
+            (r) => ({ costUsd: r.costUsd, model: MODEL.generate }),
           ).catch(() => ({ text: "", costUsd: 0, model: "", finishReason: "error" }));
 
           try {
@@ -236,7 +241,11 @@ export async function POST(req: Request) {
             partIds = matchParts((parsed.partNumbers as string[]).join(" "), known);
           }
         } else {
-          note("skip the model", 0, "the document stated everything; no model was needed");
+          note(
+            "skip the model",
+            0,
+            `the document stated everything; ${MODEL.generate} was not needed`,
+          );
         }
 
         // 4. Reconcile against the real BOM.
