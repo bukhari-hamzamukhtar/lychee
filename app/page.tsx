@@ -57,6 +57,7 @@ const STEPS = [
 
 import { Tour } from "@/components/Tour";
 import { VigilWatch } from "@/components/VigilWatch";
+import { TwoAnswers } from "@/components/TwoAnswers";
 
 export default function Landing() {
   return (
@@ -271,7 +272,8 @@ export default function Landing() {
 
       {/* ------------------------------------------------ close */}
       <section>
-        <div className="mx-auto max-w-[1320px] px-8 py-28">
+        <div className="mx-auto grid max-w-[1320px] items-start gap-14 px-8 py-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)]">
+          <div>
           <Reveal>
             <p className="max-w-[24ch] text-[clamp(1.6rem,3vw,2.4rem)] font-normal leading-[1.18] tracking-[-0.02em]">
               Obsolescence management is already an industry. Every tool in it is a
@@ -293,6 +295,10 @@ export default function Landing() {
                 or see which parts are already at risk
               </Link>
             </div>
+          </Reveal>
+          </div>
+          <Reveal delay={2}>
+            <TwoAnswers />
           </Reveal>
         </div>
       </section>
