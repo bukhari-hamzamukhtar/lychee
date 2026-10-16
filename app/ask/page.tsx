@@ -408,6 +408,13 @@ export default function AskPage() {
                 Rename
               </button>
               <button
+                onClick={() => void compact()}
+                disabled={busy !== null || turns.length === 0}
+                className="block text-[12.5px] text-dim transition-colors hover:text-fg disabled:opacity-40"
+              >
+                {busy === "distil" ? "Distilling" : "Distil the transcript"}
+              </button>
+              <button
                 onClick={() => void fork()}
                 disabled={busy !== null}
                 className="block text-[12.5px] text-dim transition-colors hover:text-fg disabled:opacity-50"
@@ -626,12 +633,7 @@ This deletes ${loses}. ` +
             )}
           </section>
 
-          <ContextGauge
-            use={use}
-            onCompact={() => void compact()}
-            busy={busy}
-            canCompact={turns.length > 0}
-          />
+          <ContextGauge use={use} />
 
           <section>
             <SectionTitle
@@ -675,17 +677,7 @@ This deletes ${loses}. ` +
  * the transcript does not, and that is the thing worth understanding before you
  * press either button.
  */
-function ContextGauge({
-  use,
-  onCompact,
-  busy,
-  canCompact,
-}: {
-  use: ReturnType<typeof measureContext>;
-  onCompact: () => void;
-  busy: null | "distil" | "fork";
-  canCompact: boolean;
-}) {
+function ContextGauge({ use }: { use: ReturnType<typeof measureContext> }) {
   const pct = Math.min(100, Math.round(use.ratio * 100));
   return (
     <section>
@@ -722,21 +714,12 @@ function ContextGauge({
         </div>
       </dl>
 
-      <div className={`mt-4 ${use.shouldCompact ? "border border-warn/50 px-4 py-3" : ""}`}>
-        {use.shouldCompact && (
-          <p className="mb-3 text-[12.5px] leading-relaxed text-warn">
-            The window is nearly full. Distil to keep what this conversation established
-            and discard the rest.
-          </p>
-        )}
-        <Button
-          tone={use.shouldCompact ? "accent" : "quiet"}
-          onClick={onCompact}
-          disabled={busy !== null || !canCompact}
-        >
-          {busy === "distil" ? "Distilling" : "Distil the transcript"}
-        </Button>
-      </div>
+      {use.shouldCompact && (
+        <p className="mt-4 border border-warn/50 px-4 py-3 text-[12.5px] leading-relaxed text-warn">
+          The window is nearly full. Distil the transcript — the control is beside the
+          conversation on the left — to keep what it established and discard the rest.
+        </p>
+      )}
 
       <p className="mt-3 text-[11.5px] leading-relaxed text-dim">
         Grey survives. <span className="text-accent">Orange</span> is the transcript,

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAccountGate } from "./RequireAccount";
 import { usePathname } from "next/navigation";
@@ -72,6 +73,9 @@ export function Assistant() {
   }, []);
 
   async function send(text: string) {
+    // The composer is already inert without an account; this is the same
+    // rule stated where it cannot be styled around.
+    if (!allowed) return;
     const question = text.trim();
     if (!question || busy) return;
     setInput("");
@@ -98,11 +102,6 @@ export function Assistant() {
       setBusy(false);
     }
   }
-
-  // Every turn spends inference on the team's shared key, so Vigil is not
-  // offered to someone the workspace cannot attribute it to. Reading the
-  // workspace stays open; none of that calls a model.
-  if (!allowed) return null;
 
   return (
     <>
@@ -148,7 +147,30 @@ export function Assistant() {
         </header>
 
         <div ref={scroller} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-          {msgs.length === 0 && (
+          {/* Vigil is visible to everyone because it is part of the product.
+              Answering costs inference on a key shared by the whole team, so
+              that part waits for someone to be signed in. */}
+          {!allowed && (
+            <div className="space-y-3.5">
+              <p className="text-[13.5px] leading-relaxed text-mid">
+                I watch the deadlines here, and I can see whichever screen you are on.
+                Before I answer, I need to know who I am answering.
+              </p>
+              <Link
+                href="/sign-in"
+                onClick={() => setOpen(false)}
+                className="inline-block border border-[#38BDF8]/50 px-4 py-2 text-[13px] text-fg transition-opacity hover:opacity-70"
+              >
+                Sign in to ask
+              </Link>
+              <p className="text-[11.5px] leading-relaxed text-dim">
+                Everything you can read stays open without one — the parts, the products,
+                every figure the engine computes. None of it calls a model.
+              </p>
+            </div>
+          )}
+
+          {allowed && msgs.length === 0 && (
             <div className="space-y-4">
               <p className="text-[13.5px] leading-relaxed text-mid">
                 I can see this screen and I know how the system works underneath it. Ask
@@ -194,7 +216,7 @@ export function Assistant() {
         </div>
 
         <div className="border-t border-[#38BDF8]/20 p-3">
-          <div className="flex items-end gap-2">
+          <div className={`flex items-end gap-2 ${allowed ? "" : "pointer-events-none opacity-40"}`}>
             <textarea
               ref={field}
               rows={1}
@@ -206,7 +228,7 @@ export function Assistant() {
                   send(input);
                 }
               }}
-              placeholder="Ask about this screen…"
+              placeholder={allowed ? "Ask about this screen…" : "Sign in to ask"}
               className="max-h-28 flex-1 resize-none bg-transparent px-1 py-1.5 text-[13.5px] outline-none placeholder:text-dim"
             />
             <button

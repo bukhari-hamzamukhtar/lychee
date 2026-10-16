@@ -56,6 +56,7 @@ const STEPS = [
 ];
 
 import { Tour } from "@/components/Tour";
+import { VigilWatch } from "@/components/VigilWatch";
 
 export default function Landing() {
   return (
@@ -246,7 +247,7 @@ export default function Landing() {
 
       {/* ------------------------------------------------ cost */}
       <section className="border-b border-line">
-        <div className="mx-auto max-w-[1320px] px-8 py-24">
+        <div className="mx-auto grid max-w-[1320px] items-center gap-14 px-8 py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
           <Reveal>
             <Eyebrow>What it costs to run</Eyebrow>
             <p className="mt-6 max-w-[26ch] text-[clamp(1.5rem,2.7vw,2.1rem)] font-normal leading-[1.2] tracking-[-0.02em]">
@@ -261,6 +262,9 @@ export default function Landing() {
               ones look important — which is how the expensive ones get missed. Every stage
               reports its own cost on screen.
             </p>
+          </Reveal>
+          <Reveal>
+            <VigilWatch />
           </Reveal>
         </div>
       </section>

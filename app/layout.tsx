@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               extra room at the bottom keeps the attribution readable. */}
           <footer className="border-t border-line">
             <div className="mx-auto max-w-[1320px] px-8 pb-24 pt-12 sm:pb-20">
-              <div className="flex flex-wrap items-start justify-between gap-8">
+              <div className="flex flex-wrap items-start justify-between gap-8 pb-12">
                 <div className="flex items-center gap-2.5 text-dim">
                   <Logo size={22} />
                   <span className="text-[13px] font-medium">LastBuy</span>

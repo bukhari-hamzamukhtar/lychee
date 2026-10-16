@@ -241,11 +241,7 @@ export async function POST(req: Request) {
             partIds = matchParts((parsed.partNumbers as string[]).join(" "), known);
           }
         } else {
-          note(
-            "skip the model",
-            0,
-            `the document stated everything; ${MODEL.generate} was not needed`,
-          );
+          note("skip the model", 0, "the document stated everything plainly");
         }
 
         // 4. Reconcile against the real BOM.
