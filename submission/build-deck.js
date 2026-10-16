@@ -1,527 +1,418 @@
 /**
- * Pitch deck generator for LastBuy.
+ * The LastBuy deck.
  *
- * Run from the scratchpad install that has pptxgenjs:
- *   node build-deck.js
+ *   node submission/build-deck.js
  *
- * Dark slides, because the product is dark and screenshots of it sit on four
- * of the nine. Cambria headings over Arial body: both render true-to-width, so
- * the overflow check in QA can be trusted.
+ * Nine slides. The first and the last are dark, the seven in between are light,
+ * which is exactly how the product behaves — so the deck and the thing it is
+ * about look like one piece of work.
+ *
+ * Colours are lifted straight out of app/globals.css rather than picked again
+ * here. Arial throughout, because the app is all sans and a serif heading would
+ * read as a different product; part numbers and endpoints are set in Consolas,
+ * the way the app sets them in mono.
+ *
+ * Needs pptxgenjs, which is deliberately not a dependency of the app.
  */
 const path = require("path");
 const pptxgen = require("pptxgenjs");
 
-const SHOTS = process.env.SHOTS_DIR || "G:/amd-hackathon/lastbuy/submission/screenshots";
-const OUT = process.env.OUT_FILE || "G:/amd-hackathon/lastbuy/submission/LastBuy.pptx";
+const SHOTS = process.env.SHOTS_DIR || path.join(__dirname, "screenshots");
+const OUT = process.env.OUT_FILE || path.join(__dirname, "LastBuy.pptx");
+const shot = (n) => path.join(SHOTS, n);
 
-const THEME = {
-  name: "LastBuy",
-  headFontFace: "Cambria",
-  bodyFontFace: "Arial",
-  colors: {
-    dk1: "E2E8F0", // text1 — light, because the deck is dark
-    lt1: "0B1120", // background1
-    dk2: "94A3B8", // text2 — muted
-    lt2: "0F172A", // background2 — card panels
-    accent1: "6366F1", // indigo, lablab's primary and ours
-    accent2: "EF4444", // critical
-    accent3: "10B981", // confirmed
-    accent4: "A5B4FC", // soft indigo, for Evolus labels
-    accent5: "1E293B", // hairline
-    accent6: "64748B",
-    hlink: "6366F1",
-    folHlink: "94A3B8",
-  },
+/* ---------------------------------------------------------------- palette */
+
+const DARK = {
+  bg: "08090B",
+  line: "262A31",
+  fg: "F6F7F9",
+  mid: "D6DBE2",
+  dim: "B2BBC5",
+  accent: "FF5A3D",
 };
 
-const pres = new pptxgen();
-pres.layout = "LAYOUT_WIDE"; // 13.3 x 7.5
-pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
-pres.author = "Hamza Mukhtar Bukhari";
-pres.title = "LastBuy";
+const LIGHT = {
+  bg: "FFFFFF",
+  line: "DFE1E5",
+  fg: "111317",
+  mid: "373D47",
+  dim: "5C636E",
+  accent: "D62D12",
+};
 
-const C = pres.SchemeColor;
-const W = 13.3;
-const M = 0.7; // page margin
+const SANS = "Arial";
+const MONO = "Consolas";
 
-// ---------- layouts ----------
+const pptx = new pptxgen();
+pptx.layout = "LAYOUT_16x9"; // 13.333 x 7.5 inches
+pptx.author = "Hamza Mukhtar Bukhari";
+pptx.company = "LastBuy";
+pptx.title = "LastBuy - know what a discontinued part breaks";
 
-pres.defineSlideMaster({
-  title: "TITLE",
-  background: { color: THEME.colors.lt1 },
-  objects: [
-    {
-      placeholder: {
-        options: { name: "title", type: "title", x: M, y: 2.5, w: W - M * 2, h: 1.3,
-          fontSize: 54, bold: true, color: C.text1 },
-        text: "",
-      },
-    },
-    {
-      placeholder: {
-        options: { name: "body", type: "body", x: M, y: 3.9, w: W - M * 2 - 2.2, h: 1.6,
-          fontSize: 20, color: C.text2, lineSpacingMultiple: 1.25 },
-        text: "",
-      },
-    },
-  ],
-});
+const W = 13.333;
+const H = 7.5;
+const M = 0.85;
 
-pres.defineSlideMaster({
-  title: "CONTENT",
-  background: { color: THEME.colors.lt1 },
-  objects: [
-    {
-      placeholder: {
-        options: { name: "title", type: "title", x: M, y: 0.55, w: W - M * 2, h: 0.85,
-          fontSize: 36, bold: true, color: C.text1, align: "left" },
-        text: "",
-      },
-    },
-  ],
-  slideNumber: { x: W - 0.85, y: 6.95, fontSize: 10, color: THEME.colors.accent6, fontFace: "Arial" },
-});
+function slide(theme) {
+  const s = pptx.addSlide();
+  s.background = { color: theme.bg };
+  return s;
+}
 
-pres.defineSlideMaster({
-  title: "STAT",
-  background: { color: THEME.colors.lt1 },
-  objects: [
-    {
-      placeholder: {
-        options: { name: "title", type: "title", x: M, y: 0.55, w: W - M * 2, h: 0.85,
-          fontSize: 36, bold: true, color: C.text1, align: "left" },
-        text: "",
-      },
-    },
-  ],
-  slideNumber: { x: W - 0.85, y: 6.95, fontSize: 10, color: THEME.colors.accent6, fontFace: "Arial" },
-});
-
-// ---------- helpers ----------
-
-/** Panel card. The repeated motif across the deck; no edge stripes anywhere. */
-function card(slide, { x, y, w, h, name }) {
-  slide.addShape(pres.ShapeType.roundRect, {
-    x, y, w, h,
-    rectRadius: 0.08,
-    fill: { color: THEME.colors.lt2 },
-    line: { color: THEME.colors.accent5, width: 1 },
-    objectName: name,
+/** The small uppercase label the app puts above every section. */
+function eyebrow(s, text, theme, y = 0.62) {
+  s.addText(text.toUpperCase(), {
+    x: M, y, w: W - M * 2, h: 0.3,
+    fontFace: SANS, fontSize: 11, bold: true, charSpacing: 2.2, color: theme.dim,
   });
 }
 
-function stat(slide, { x, y, w, label, value, sub, tone, valueSize = 34 }) {
-  card(slide, { x, y, w, h: 1.75, name: `stat-${label}` });
-  slide.addText(label.toUpperCase(), {
-    isTextBox: true, x: x + 0.25, y: y + 0.18, w: w - 0.5, h: 0.3,
-    fontSize: 11, color: THEME.colors.accent6, charSpacing: 1, margin: 0,
+function rule(s, theme, y, x = M, w = W - M * 2) {
+  s.addShape(pptx.ShapeType.rect, {
+    x, y, w, h: 0.012,
+    fill: { color: theme.line },
+    line: { width: 0 },
   });
-  slide.addText(value, {
-    isTextBox: true, x: x + 0.25, y: y + 0.52, w: w - 0.5, h: 0.72,
-    fontSize: valueSize, bold: true, color: tone || THEME.colors.dk1, margin: 0,
-  });
-  if (sub) {
-    slide.addText(sub, {
-      isTextBox: true, x: x + 0.25, y: y + 1.26, w: w - 0.5, h: 0.32,
-      fontSize: 12, color: THEME.colors.accent6, margin: 0,
+}
+
+/** Who is running this. On every light slide, because three reviewers need it. */
+function partners(s, theme, y = H - 0.72) {
+  rule(s, theme, y - 0.22);
+  const bits = [
+    ["MODEL", "Gemma-4-31B-IT"],
+    ["ON", "AMD Instinct"],
+    ["VIA", "Evolus / lychee"],
+    ["ENGINE", "no model"],
+  ];
+  let x = M;
+  for (const [k, v] of bits) {
+    s.addText(k, {
+      x, y, w: 0.85, h: 0.26,
+      fontFace: SANS, fontSize: 9, bold: true, charSpacing: 1.6, color: theme.dim,
     });
+    s.addText(v, {
+      x: x + 0.78, y, w: 2.3, h: 0.26,
+      fontFace: MONO, fontSize: 10, color: theme.mid,
+    });
+    x += 3.0;
   }
 }
 
-function bullets(slide, items, { x, y, w, h, size = 16, gap = 10 }) {
-  slide.addText(
-    items.map((t, i) => ({
-      text: t,
-      options: { bullet: true, breakLine: i < items.length - 1, paraSpaceAfter: gap },
-    })),
-    { isTextBox: true, x, y, w, h, fontSize: size, color: C.text1, lineSpacingMultiple: 1.2 },
-  );
+/** One big number with a word under it. The deck's main visual device. */
+function figure(s, theme, { x, y, w, value, label, accent = false, size = 40 }) {
+  s.addText(value, {
+    x, y, w, h: 0.8,
+    fontFace: SANS, fontSize: size, bold: true,
+    color: accent ? theme.accent : theme.fg,
+  });
+  s.addText(label, {
+    x, y: y + 0.82, w, h: 0.7,
+    fontFace: SANS, fontSize: 12.5, color: theme.dim, lineSpacingMultiple: 1.2,
+  });
 }
 
-// ================= SLIDES =================
+/* ------------------------------------------------------------- 1. title */
 
-pres.addSection({ title: "Opening" });
-
-// 1 — title
 {
-  const s = pres.addSlide({ masterName: "TITLE", sectionTitle: "Opening" });
-  s.addText("LastBuy", { placeholder: "title" });
-  s.addText(
-    "A supplier gives you 34 days. After that, the part can never be bought again.",
-    { placeholder: "body" },
-  );
-  s.addText("AMD Developer Hackathon: ACT III   ·   Intelligent Industry   ·   Evolus Business Agents", {
-    isTextBox: true, x: M, y: 6.4, w: W - M * 2, h: 0.4,
-    fontSize: 13, color: THEME.colors.accent6, margin: 0,
+  const s = slide(DARK);
+  s.addText("LastBuy", {
+    x: M, y: 2.15, w: 7, h: 0.9,
+    fontFace: SANS, fontSize: 46, bold: true, color: DARK.fg,
   });
-  s.addNotes("Component obsolescence. Say the problem, not the stack.");
-}
-
-pres.addSection({ title: "Problem" });
-
-// 2 — the problem
-{
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Problem" });
-  s.addText("Every factory gets these, and nobody can read them", { placeholder: "title" });
-
-  card(s, { x: M, y: 1.7, w: 6.0, h: 4.3, name: "notice" });
-  s.addText("PRODUKT-ABKUENDIGUNG (PDN 26_4471)", {
-    isTextBox: true, x: M + 0.3, y: 1.95, w: 5.4, h: 0.3,
-    fontSize: 13, bold: true, color: THEME.colors.accent1, fontFace: "Courier New", margin: 0,
-  });
-  s.addText(
-    "wir informieren Sie, dass das Bauteil ADUM1201ARZ\n(Dual-Channel Digital-Isolator) abgekuendigt wird.\n\nLetzter Bestelltermin (Last Time Buy):\n17. November 2026\n\nEin direkter Ersatz ist derzeit nicht verfuegbar.",
-    {
-      isTextBox: true, x: M + 0.3, y: 2.4, w: 5.4, h: 3.2,
-      fontSize: 13, color: THEME.colors.dk2, fontFace: "Courier New",
-      lineSpacingMultiple: 1.3, margin: 0,
-    },
-  );
-
-  s.addText("Then someone works out, by hand:", {
-    isTextBox: true, x: 7.1, y: 1.75, w: W - 7.1 - M, h: 0.35,
-    fontSize: 15, bold: true, color: C.text1, margin: 0,
-  });
-  bullets(
-    s,
-    [
-      "Which finished products contain it, at every BOM level",
-      "How many go into each one, by every route",
-      "Which customers hold supply contracts",
-      "Whether a certification names it as critical",
-      "How many weeks of stock are left",
-      "How many to buy before the door closes",
-    ],
-    { x: 7.1, y: 2.25, w: W - 7.1 - M, h: 3.0, size: 15, gap: 9 },
-  );
-  s.addText("Days of work, across several people, in spreadsheets.", {
-    isTextBox: true, x: 7.1, y: 5.4, w: W - 7.1 - M, h: 0.6,
-    fontSize: 16, italic: true, color: THEME.colors.accent1, margin: 0,
-  });
-  s.addNotes("Let the German sit on screen. The language barrier is the real obstacle.");
-}
-
-pres.addSection({ title: "Finding" });
-
-// 3 — the finding
-{
-  const s = pres.addSlide({ masterName: "STAT", sectionTitle: "Finding" });
-  s.addText("What nobody knew", { placeholder: "title" });
-
-  stat(s, { x: M, y: 1.75, w: 2.8, label: "Last buy in", value: "34 days" });
-  stat(s, { x: M + 3.0, y: 1.75, w: 2.8, label: "Stock runway", value: "4.7 wk",
-    sub: "lead time 26 wk", tone: THEME.colors.accent2 });
-  stat(s, { x: M + 6.0, y: 1.75, w: 2.8, label: "Must buy", value: "504,798", sub: "EUR 1,433,626" });
-  stat(s, { x: M + 9.0, y: 1.75, w: 2.9, label: "Revenue at risk", value: "EUR 9.06M",
-    sub: "per year", valueSize: 27 });
-
-  card(s, { x: M, y: 3.9, w: W - M * 2, h: 1.5, name: "finding" });
   s.addText(
     [
-      { text: "They were already 21 weeks short — and nothing in their process would have said so.", options: { bold: true, color: THEME.colors.accent2, breakLine: true } },
-      { text: "Four point seven weeks of cover against a twenty-six week lead time. That is true today, independently of the deadline in the letter.", options: { color: THEME.colors.dk2 } },
+      { text: "Know what a discontinued part costs you ", options: { color: DARK.fg } },
+      { text: "before the window shuts.", options: { color: DARK.accent } },
     ],
-    { isTextBox: true, x: M + 0.35, y: 4.15, w: W - M * 2 - 0.7, h: 1.0, fontSize: 17, lineSpacingMultiple: 1.3 },
+    { x: M, y: 3.15, w: 8.6, h: 1.7, fontFace: SANS, fontSize: 27, lineSpacingMultiple: 1.22 },
   );
-
-  s.addText("ADUM1201ARZ · dual-channel digital isolator · reaches 5 products through 3 assemblies by 7 distinct BOM paths", {
-    isTextBox: true, x: M, y: 5.7, w: W - M * 2, h: 0.4,
-    fontSize: 13, color: THEME.colors.accent6, margin: 0,
+  s.addText("AMD Developer Hackathon: ACT III   ·   Intelligent Industry   ·   Hamza Mukhtar Bukhari", {
+    x: M, y: 5.3, w: 11, h: 0.3, fontFace: SANS, fontSize: 13, color: DARK.dim,
   });
-  s.addNotes("This slide is the pitch. Pause on 4.7 against 26.");
+  rule(s, DARK, 5.9, M, 5.2);
+  s.addText("Gemma-4-31B-IT on AMD Instinct   ·   Evolus workspace lychee   ·   lychee-seven.vercel.app", {
+    x: M, y: 6.1, w: 11.6, h: 0.3, fontFace: MONO, fontSize: 11, color: DARK.mid,
+  });
 }
 
-pres.addSection({ title: "How" });
+/* ------------------------------------------------------------ 2. problem */
 
-// 4 — pipeline
 {
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "How" });
-  s.addText("Twenty seconds, end to end", { placeholder: "title" });
-
-  const steps = [
-    ["Evolus", "translate + doc-structure", "the notice, in any language", THEME.colors.accent4],
-    ["Engine", "propagate through the BOM", "exact arithmetic, no model", THEME.colors.accent1],
-    ["AMD", "write the impact memo", "open model on AMD GPUs", THEME.colors.accent2],
-    ["Evolus", "agent rules on certification", "cites the clause", THEME.colors.accent4],
-    ["Evolus", "draft order + customer notice", "nothing is sent", THEME.colors.accent4],
-  ];
-  const cw = 2.28, gapx = 0.17;
-  steps.forEach((st, i) => {
-    const x = M + i * (cw + gapx);
-    card(s, { x, y: 2.0, w: cw, h: 2.5, name: `step-${i}` });
-    s.addText(st[0].toUpperCase(), {
-      isTextBox: true, x: x + 0.2, y: 2.2, w: cw - 0.4, h: 0.28,
-      fontSize: 10, bold: true, color: st[3], charSpacing: 1, margin: 0,
-    });
-    s.addText(st[1], {
-      isTextBox: true, x: x + 0.2, y: 2.58, w: cw - 0.4, h: 1.0,
-      fontSize: 14, bold: true, color: C.text1, margin: 0, lineSpacingMultiple: 1.15,
-    });
-    s.addText(st[2], {
-      isTextBox: true, x: x + 0.2, y: 3.65, w: cw - 0.4, h: 0.7,
-      fontSize: 11, color: THEME.colors.accent6, margin: 0, lineSpacingMultiple: 1.15,
-    });
+  const s = slide(LIGHT);
+  eyebrow(s, "The problem", LIGHT);
+  s.addText("A letter arrives. Your part is dead in 34 days.", {
+    x: M, y: 1.05, w: 7.0, h: 1.3,
+    fontFace: SANS, fontSize: 30, bold: true, color: LIGHT.fg, lineSpacingMultiple: 1.14,
+  });
+  s.addText(
+    "Someone now has to work out which products use it, which customers are under " +
+      "contract, which certificates re-open, and how many to buy before the door shuts.",
+    { x: M, y: 2.55, w: 6.3, h: 1.2, fontFace: SANS, fontSize: 15, color: LIGHT.mid, lineSpacingMultiple: 1.35 },
+  );
+  s.addText("Miss the date and the part is gone for good. You redesign the product, or you stop building it.", {
+    x: M, y: 3.85, w: 6.3, h: 0.9, fontFace: SANS, fontSize: 15, color: LIGHT.fg, lineSpacingMultiple: 1.35,
   });
 
-  card(s, { x: M, y: 4.85, w: W - M * 2, h: 1.25, name: "gate" });
-  s.addText(
-    [
-      { text: "Then it stops.  ", options: { bold: true, color: THEME.colors.accent3 } },
-      { text: "A person commits the spend. The agent prepares the decision; it does not take it.", options: { color: THEME.colors.dk2 } },
-    ],
-    { isTextBox: true, x: M + 0.35, y: 5.25, w: W - M * 2 - 0.7, h: 0.5, fontSize: 17 },
-  );
-  s.addNotes("Five stages, about 9 Evolus credits and $0.00012 of AMD inference per run.");
+  rule(s, LIGHT, 1.2, 8.0, 4.5);
+  figure(s, LIGHT, { x: 8.0, y: 1.4, w: 4.5, value: "Days", label: "to work one notice out by hand" });
+  rule(s, LIGHT, 3.05, 8.0, 4.5);
+  figure(s, LIGHT, { x: 8.0, y: 3.25, w: 4.5, value: "3", label: "people usually pulled in" });
+  rule(s, LIGHT, 4.9, 8.0, 4.5);
+  figure(s, LIGHT, { x: 8.0, y: 5.1, w: 4.5, value: "0", label: "chances to buy it again afterwards", accent: true });
+
+  partners(s, LIGHT);
 }
 
-// 5 — why no LLM in the engine
+/* -------------------------------------------------------- 3. what it does */
+
 {
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "How" });
-  s.addText("The engine has no language model in it", { placeholder: "title" });
-
-  card(s, { x: M, y: 1.7, w: 6.4, h: 3.1, name: "paths" });
-  s.addText("ADUM1201ARZ reaches MD-7500 twice", {
-    isTextBox: true, x: M + 0.3, y: 1.95, w: 5.8, h: 0.3,
-    fontSize: 14, bold: true, color: C.text1, margin: 0,
+  const s = slide(LIGHT);
+  eyebrow(s, "What it does", LIGHT);
+  s.addText("Drop the letter in. Get the damage.", {
+    x: M, y: 1.0, w: 6.2, h: 0.8, fontFace: SANS, fontSize: 28, bold: true, color: LIGHT.fg,
   });
-  s.addText(
-    "ADUM1201ARZ  ->  ASM-GATE-D  ->  ASM-PWR-A  ->  MD-7500\nADUM1201ARZ  ->  ASM-CTRL-B  ->  MD-7500",
-    {
-      isTextBox: true, x: M + 0.3, y: 2.45, w: 5.8, h: 0.9,
-      fontSize: 12, color: THEME.colors.accent1, fontFace: "Courier New",
-      lineSpacingMultiple: 1.4, margin: 0,
-    },
-  );
-  s.addText(
-    "2 isolators per gate module x 3 modules per power board x 2 boards, plus 1 on the control board = 13 per unit.",
-    {
-      isTextBox: true, x: M + 0.3, y: 3.5, w: 5.8, h: 1.0,
-      fontSize: 13, color: THEME.colors.dk2, margin: 0, lineSpacingMultiple: 1.25,
-    },
-  );
-
-  bullets(
-    s,
-    [
-      "A bill of materials is a directed graph. Propagation is exact arithmetic.",
-      "Quantity sums over every route — a part can reach one product twice.",
-      "Ask a language model to do this and it invents quantities.",
-      "Every path is printed, so any number can be checked by hand in seconds.",
-    ],
-    { x: 7.45, y: 1.85, w: W - 7.45 - M, h: 2.9, size: 15, gap: 11 },
-  );
-
-  card(s, { x: M, y: 5.05, w: W - M * 2, h: 1.1, name: "split" });
-  s.addText(
-    "The graph decides what is affected. The model reads, rules and writes. It is never asked for a number.",
-    { isTextBox: true, x: M + 0.35, y: 5.35, w: W - M * 2 - 0.7, h: 0.5,
-      fontSize: 17, italic: true, color: THEME.colors.accent1, margin: 0 },
-  );
-  s.addNotes("This is the originality argument. Everyone else built RAG over documents.");
-}
-
-pres.addSection({ title: "Agent" });
-
-// 6 — the agent
-{
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Agent" });
-  s.addText("An agent that knows what it does not know", { placeholder: "title" });
-
-  card(s, { x: M, y: 1.7, w: 5.9, h: 2.0, name: "cites" });
-  s.addText("It cites the clause", {
-    isTextBox: true, x: M + 0.3, y: 1.92, w: 5.3, h: 0.3,
-    fontSize: 13, bold: true, color: THEME.colors.accent4, margin: 0,
-  });
-  s.addText(
-    "\u201CSubstitution re-opens EN 61800-3 under clause 6.3.2 and UL 61800-5-1 under clause 4.4. Clause 6.4.1 requires re-tested radiated and conducted emissions per affected product.\u201D",
-    { isTextBox: true, x: M + 0.3, y: 2.3, w: 5.3, h: 1.25,
-      fontSize: 13, color: C.text1, margin: 0, lineSpacingMultiple: 1.25 },
-  );
-
-  card(s, { x: 7.0, y: 1.7, w: W - 7.0 - M, h: 2.0, name: "refuses" });
-  s.addText("And it refuses what it cannot ground", {
-    isTextBox: true, x: 7.3, y: 1.92, w: 5.0, h: 0.3,
-    fontSize: 13, bold: true, color: THEME.colors.accent3, margin: 0,
-  });
-  s.addText(
-    "\u201CThe documents contain no thermal derating curve for this part. You need the manufacturer datasheet, or review by a qualified engineer.\u201D",
-    { isTextBox: true, x: 7.3, y: 2.3, w: 5.0, h: 1.25,
-      fontSize: 13, color: C.text1, margin: 0, lineSpacingMultiple: 1.25 },
-  );
-
-  bullets(
-    s,
-    [
-      "Runs on the AMD Token Factory endpoint connected to the Evolus workspace — not a model the platform chose",
-      "Answers only from the company's own approval records and obsolescence procedure",
-      "Instructed that it may not introduce a part number, date, quantity or cost of its own",
-    ],
-    { x: M, y: 4.0, w: W - M * 2, h: 1.7, size: 15, gap: 11 },
-  );
-
-  s.addText("That refusal is the feature. It is what you need before anything goes near a EUR 1.4M purchase order.", {
-    isTextBox: true, x: M, y: 5.85, w: W - M * 2, h: 0.5,
-    fontSize: 16, italic: true, color: THEME.colors.accent1, margin: 0,
-  });
-  s.addNotes("Do not cut this from the video. It is the trust argument.");
-}
-
-pres.addSection({ title: "Product" });
-
-// 7 — the product, with callouts rather than a stretched screenshot
-{
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-  s.addText("Every figure traceable, on one screen", { placeholder: "title" });
-
-  s.addImage({
-    path: path.join(SHOTS, "02-impact.jpg"),
-    x: M, y: 1.65, w: 7.4, h: 4.67,
-    objectName: "impact-screenshot",
-  });
-
-  const notes = [
-    ["Four numbers, not a dashboard", "Days remaining, stock runway, quantity to buy, revenue exposed."],
-    ["The path under every product", "ADUM1201ARZ to ASM-GATE-D to ASM-PWR-A to MD-7500. Check the 13 by hand."],
-    ["Risk before any notice", "Parts scored from graph position and supplier history, left column."],
-  ];
-  let y = 1.8;
-  notes.forEach(([h, b], i) => {
-    card(s, { x: 8.35, y, w: W - 8.35 - M, h: 1.42, name: `note-${i}` });
-    s.addText(h, {
-      isTextBox: true, x: 8.6, y: y + 0.2, w: W - 8.35 - M - 0.5, h: 0.32,
-      fontSize: 14, bold: true, color: THEME.colors.accent1, margin: 0,
-    });
-    s.addText(b, {
-      isTextBox: true, x: 8.6, y: y + 0.56, w: W - 8.35 - M - 0.5, h: 0.78,
-      fontSize: 12, color: THEME.colors.dk2, margin: 0, lineSpacingMultiple: 1.2,
-    });
-    y += 1.58;
-  });
-  s.addNotes("The paths are the point. Any number on this screen can be checked by hand.");
-}
-
-// 8 — what a run costs, drawn natively so it stays crisp
-{
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-  s.addText("What each stage cost, on every run", { placeholder: "title" });
 
   const rows = [
-    ["Evolus", "translate notice", "4.3 s", "2.06 credits"],
-    ["Evolus", "extract fields", "4.3 s", "2.79 credits"],
-    ["Engine", "propagate through BOM", "0.0 s", "free, local"],
-    ["AMD", "write impact memo", "10.5 s", "$0.000118"],
-    ["Evolus", "draft supplier order", "3.7 s", "1.96 credits"],
-    ["Evolus", "draft customer notice", "3.0 s", "1.84 credits"],
-    ["Evolus", "rule on certification impact", "10.8 s", "agent, on AMD"],
+    ["Reads any notice", "A PDF, a scan, a photo. Any language.", "27s"],
+    ["Traces the part", "Through your bill of materials, up to every product.", "5 products"],
+    ["Prices the decision", "What to buy, what it costs, what it protects.", "EUR 1.4M"],
+    ["Shows its working", "Every figure is arithmetic you can replay.", "0 guessed"],
   ];
-  const tone = { Evolus: THEME.colors.accent4, AMD: THEME.colors.accent1, Engine: THEME.colors.accent6 };
+  let y = 2.0;
+  for (const [title, body, num] of rows) {
+    rule(s, LIGHT, y - 0.14, M, 6.5);
+    s.addText(title, { x: M, y, w: 3.0, h: 0.3, fontFace: SANS, fontSize: 15, bold: true, color: LIGHT.fg });
+    s.addText(body, { x: M, y: y + 0.32, w: 4.5, h: 0.4, fontFace: SANS, fontSize: 12, color: LIGHT.dim });
+    s.addText(num, {
+      x: M + 4.6, y, w: 1.9, h: 0.35,
+      fontFace: SANS, fontSize: 16, bold: true, color: LIGHT.accent, align: "right",
+    });
+    y += 1.05;
+  }
 
-  let y = 1.75;
-  rows.forEach((r, i) => {
-    card(s, { x: M, y, w: W - M * 2, h: 0.54, name: `row-${i}` });
-    s.addText(r[0].toUpperCase(), {
-      isTextBox: true, x: M + 0.25, y: y + 0.15, w: 1.1, h: 0.26,
-      fontSize: 10, bold: true, color: tone[r[0]], charSpacing: 1, margin: 0,
-    });
-    s.addText(r[1], {
-      isTextBox: true, x: M + 1.5, y: y + 0.13, w: 6.0, h: 0.3,
-      fontSize: 14, color: C.text1, margin: 0,
-    });
-    s.addText(r[2], {
-      isTextBox: true, x: 9.2, y: y + 0.14, w: 1.1, h: 0.28,
-      fontSize: 13, color: THEME.colors.dk2, align: "right", margin: 0,
-    });
-    s.addText(r[3], {
-      isTextBox: true, x: 10.5, y: y + 0.14, w: W - 10.5 - M - 0.25, h: 0.28,
-      fontSize: 13, color: THEME.colors.accent6, align: "right", margin: 0,
-    });
-    y += 0.64;
+  s.addImage({ path: shot("13-notice-impact.png"), x: 7.9, y: 1.05, w: 4.6, h: 2.59 });
+  s.addText("One notice, opened. Everything under it is computed.", {
+    x: 7.9, y: 3.75, w: 4.6, h: 0.3, fontFace: SANS, fontSize: 11, color: LIGHT.dim,
   });
 
-  s.addText(
-    [
-      { text: "About 20 seconds, 9 Evolus credits and $0.00012.  ", options: { bold: true, color: THEME.colors.accent1 } },
-      { text: "A buyer deciding whether to run this on every incoming notice needs that number.", options: { color: THEME.colors.dk2 } },
-    ],
-    { isTextBox: true, x: M, y: 6.45, w: W - M * 2, h: 0.5, fontSize: 15 },
-  );
-  s.addNotes("Memo and both drafts run concurrently, so wall clock is under the sum.");
+  partners(s, LIGHT);
 }
 
-// 9 — the upload, which is what makes it a product rather than a demo
-{
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Product" });
-  s.addText("Drop in a notice you have never seen", { placeholder: "title" });
+/* ------------------------------------------------- 4. the graph, not a model */
 
-  s.addImage({
-    path: path.join(SHOTS, "01-inbox.jpg"),
-    x: M, y: 1.65, w: 7.4, h: 4.67,
-    objectName: "inbox-screenshot",
+{
+  const s = slide(LIGHT);
+  eyebrow(s, "How the numbers are made", LIGHT);
+  s.addText("The money is a graph walk. No model touches it.", {
+    x: M, y: 1.0, w: 7.0, h: 1.2,
+    fontFace: SANS, fontSize: 27, bold: true, color: LIGHT.fg, lineSpacingMultiple: 1.14,
+  });
+  s.addText(
+    "One isolator sits under five finished products. We walk the bill of materials from " +
+      "the part up to each of them, multiplying quantities on the way. Ask again and you " +
+      "get the same answer, because it is arithmetic.",
+    { x: M, y: 2.35, w: 5.5, h: 1.5, fontFace: SANS, fontSize: 14, color: LIGHT.mid, lineSpacingMultiple: 1.35 },
+  );
+  s.addText(
+    [
+      { text: "Models read documents and write the memo.\n", options: { color: LIGHT.mid } },
+      { text: "They never make a number you act on.", options: { color: LIGHT.fg, bold: true } },
+    ],
+    { x: M, y: 3.95, w: 5.5, h: 0.9, fontFace: SANS, fontSize: 14, lineSpacingMultiple: 1.35 },
+  );
+
+  figure(s, LIGHT, { x: M, y: 5.0, w: 2.4, value: "5", label: "products it reaches", size: 36 });
+  figure(s, LIGHT, { x: M + 2.6, y: 5.0, w: 3.2, value: "EUR 9.05M", label: "revenue behind them, a year", accent: true, size: 36 });
+
+  s.addImage({ path: shot("01-landing-hero.png"), x: 7.0, y: 1.4, w: 5.5, h: 3.09 });
+  s.addText("The same part, traced on screen.", {
+    x: 7.0, y: 4.6, w: 5.5, h: 0.3, fontFace: SANS, fontSize: 11, color: LIGHT.dim,
   });
 
-  const notes = [
-    ["MinerU, on AMD GPUs", "A PDF or a photo of one, in any language. It takes a base64 data URI, so nothing has to be hosted first."],
-    ["Reconciled, not trusted", "Part numbers are matched against the real BOM. A notice naming nothing you build is rejected, not assessed."],
-    ["17 seconds, $0.00006", "Plus about two Evolus credits. Cheap enough to run on every notice that arrives."],
+  partners(s, LIGHT);
+}
+
+/* ------------------------------------------------------- 5. the real letter */
+
+{
+  const s = slide(LIGHT);
+  eyebrow(s, "On a real document", LIGHT);
+  s.addText("We tested it on a letter nobody wrote for us.", {
+    x: M, y: 1.0, w: 7.6, h: 0.85, fontFace: SANS, fontSize: 27, bold: true, color: LIGHT.fg,
+  });
+  s.addText(
+    "Hittite Microwave PCN140002 - a real 2014 notice, 488 KB, scanned. It is a form, so " +
+      "we read the form first and only ask a model for what the page does not say.",
+    { x: M, y: 1.9, w: 6.2, h: 1.0, fontFace: SANS, fontSize: 14, color: LIGHT.mid, lineSpacingMultiple: 1.35 },
+  );
+
+  const compare = [
+    ["", "model always", "form first"],
+    ["OCR on AMD", "42s", "27s"],
+    ["Evolus extraction", "17s", "skipped"],
+    ["Model normalisation", "103s", "skipped"],
+    ["Total", "161s", "27s"],
+    ["Cost", "10.4 credits", "nothing"],
   ];
-  let y = 1.8;
-  notes.forEach(([h, b], i) => {
-    card(s, { x: 8.35, y, w: W - 8.35 - M, h: 1.42, name: `up-${i}` });
-    s.addText(h, {
-      isTextBox: true, x: 8.6, y: y + 0.2, w: W - 8.35 - M - 0.5, h: 0.32,
-      fontSize: 14, bold: true, color: THEME.colors.accent1, margin: 0,
+  let y = 3.1;
+  for (const [k, a, b] of compare) {
+    const head = k === "";
+    const total = k === "Total" || k === "Cost";
+    if (!head) rule(s, LIGHT, y - 0.1, M, 6.2);
+    s.addText(k, {
+      x: M, y, w: 2.4, h: 0.3, fontFace: SANS, fontSize: 12.5,
+      bold: total, color: total ? LIGHT.fg : LIGHT.dim,
     });
+    s.addText(a, { x: M + 2.4, y, w: 1.8, h: 0.3, fontFace: SANS, fontSize: 12.5, color: LIGHT.dim, align: "right" });
     s.addText(b, {
-      isTextBox: true, x: 8.6, y: y + 0.56, w: W - 8.35 - M - 0.5, h: 0.8,
-      fontSize: 11.5, color: THEME.colors.dk2, margin: 0, lineSpacingMultiple: 1.2,
+      x: M + 4.3, y, w: 1.9, h: 0.3, fontFace: SANS, fontSize: 12.5,
+      bold: total, color: head ? LIGHT.dim : LIGHT.accent, align: "right",
     });
-    y += 1.58;
+    y += head ? 0.42 : 0.5;
+  }
+
+  s.addText("Vercel kills a request at 60 seconds. The left column does not just cost more - it fails.", {
+    x: M, y: 6.2, w: 6.3, h: 0.5, fontFace: SANS, fontSize: 12, color: LIGHT.mid, lineSpacingMultiple: 1.3,
   });
-  s.addNotes("This is the difference between a dashboard and a product you can put work into.");
+
+  s.addImage({ path: shot("02-notices-empty.png"), x: 7.5, y: 1.9, w: 5.0, h: 2.81 });
+  s.addText("Five parts matched. Last-time buy 2014-02-01, read off its own label.", {
+    x: 7.5, y: 4.85, w: 5.0, h: 0.5, fontFace: SANS, fontSize: 11, color: LIGHT.dim, lineSpacingMultiple: 1.3,
+  });
+
+  partners(s, LIGHT);
 }
 
-pres.addSection({ title: "Case" });
+/* ------------------------------------------------------------------ 6. ask */
 
-// 9 — business case + stack
 {
-  const s = pres.addSlide({ masterName: "STAT", sectionTitle: "Case" });
-  s.addText("People already pay for this, badly", { placeholder: "title" });
-
-  stat(s, { x: M, y: 1.7, w: 3.85, label: "Per assessment", value: "$0.00012", sub: "AMD inference, plus 9 Evolus credits" });
-  stat(s, { x: M + 4.05, y: 1.7, w: 3.85, label: "Time", value: "Days to 20s", sub: "three people to none" });
-  stat(s, { x: M + 8.1, y: 1.7, w: 3.8, label: "On one part", value: "EUR 9.06M", sub: "annual revenue protected" });
-
-  card(s, { x: M, y: 3.75, w: 6.0, h: 2.4, name: "market" });
-  s.addText("The category exists", {
-    isTextBox: true, x: M + 0.3, y: 3.98, w: 5.4, h: 0.3,
-    fontSize: 14, bold: true, color: THEME.colors.accent1, margin: 0,
+  const s = slide(LIGHT);
+  eyebrow(s, "Ask", LIGHT);
+  s.addText("Bring your own documents. Every answer says where it came from.", {
+    x: M, y: 1.0, w: 5.6, h: 1.6,
+    fontFace: SANS, fontSize: 25, bold: true, color: LIGHT.fg, lineSpacingMultiple: 1.14,
   });
   s.addText(
-    "SiliconExpert, Z2Data and IHS sell obsolescence data today, and manufacturers employ obsolescence managers. That is the proof of willingness to pay.\n\nEvery one of them is a database you search. This is the first that reads the incoming notice and tells you what breaks.",
-    { isTextBox: true, x: M + 0.3, y: 4.35, w: 5.4, h: 1.7,
-      fontSize: 13, color: THEME.colors.dk2, margin: 0, lineSpacingMultiple: 1.3 },
+    "Drop in as many files as you like and ask across all of them at once. A claim read " +
+      "from a document ends with the filename. A figure computed from the bill of " +
+      "materials ends with [engine]. The two are never mixed up.",
+    { x: M, y: 2.75, w: 5.3, h: 1.5, fontFace: SANS, fontSize: 13.5, color: LIGHT.mid, lineSpacingMultiple: 1.35 },
+  );
+  s.addText(
+    "When the window fills, the chat is not summarised. It becomes claims - each with " +
+      "its subject, how it is known, and which document it came from - and the messages " +
+      "are thrown away. A summary cannot be checked. A claim can.",
+    { x: M, y: 4.35, w: 5.3, h: 1.6, fontFace: SANS, fontSize: 13.5, color: LIGHT.fg, lineSpacingMultiple: 1.35 },
   );
 
-  card(s, { x: 7.1, y: 3.75, w: W - 7.1 - M, h: 2.4, name: "stack" });
-  s.addText("Built on", {
-    isTextBox: true, x: 7.4, y: 3.98, w: 4.9, h: 0.3,
-    fontSize: 14, bold: true, color: THEME.colors.accent1, margin: 0,
+  s.addImage({ path: shot("14-ask-in-use.png"), x: 6.4, y: 1.25, w: 6.1, h: 3.43 });
+  s.addText("2.1 seconds. $0.000039.", {
+    x: 6.4, y: 4.8, w: 6.1, h: 0.3, fontFace: MONO, fontSize: 12, color: LIGHT.accent,
   });
+
+  partners(s, LIGHT);
+}
+
+/* ------------------------------------------------------- 7. what it runs on */
+
+{
+  const s = slide(LIGHT);
+  eyebrow(s, "What it runs on", LIGHT);
+  s.addText("Three partners, and one file that proves it.", {
+    x: M, y: 1.0, w: 8.4, h: 0.85, fontFace: SANS, fontSize: 28, bold: true, color: LIGHT.fg,
+  });
+
+  const stack = [
+    ["Gemma-4-31B-IT", "Google's open model. Reads notices, writes memos, answers in Ask.", "2.1s an answer"],
+    ["AMD Instinct", "developer.amd.com.cn - MinerU2.5-Pro reads, Gemma does the rest.", "every model call"],
+    ["Evolus / lychee", "Agent, AI Tools and a knowledge library, driven through the REST API.", "cites its clauses"],
+    ["lib/graph.ts", "The impact engine. Pure traversal - no model is involved at all.", "replayable"],
+  ];
+  let y = 2.15;
+  for (const [name, body, tag] of stack) {
+    rule(s, LIGHT, y - 0.14);
+    s.addText(name, { x: M, y, w: 3.3, h: 0.32, fontFace: MONO, fontSize: 14, bold: true, color: LIGHT.fg });
+    s.addText(body, { x: M + 3.4, y: y + 0.02, w: 5.9, h: 0.4, fontFace: SANS, fontSize: 12.5, color: LIGHT.dim });
+    s.addText(tag, { x: M + 9.4, y, w: 2.1, h: 0.32, fontFace: SANS, fontSize: 12, color: LIGHT.accent, align: "right" });
+    y += 0.92;
+  }
+
+  rule(s, LIGHT, y - 0.1);
+  s.addText(
+    "lib/amd.ts is the only file in the repository that reaches an inference provider. " +
+      "Grep it for openai, anthropic, groq or fireworks and nothing comes back.",
+    { x: M, y: y + 0.14, w: 11.6, h: 0.6, fontFace: SANS, fontSize: 13, color: LIGHT.mid, lineSpacingMultiple: 1.3 },
+  );
+
+  partners(s, LIGHT);
+}
+
+/* ----------------------------------------------------------------- 8. cost */
+
+{
+  const s = slide(LIGHT);
+  eyebrow(s, "What it costs", LIGHT);
+  s.addText("Cheap enough to run on everything.", {
+    x: M, y: 1.0, w: 7.4, h: 0.85, fontFace: SANS, fontSize: 28, bold: true, color: LIGHT.fg,
+  });
+  s.addText(
+    "Most teams triage - they only look at the notices that seem important. That is how " +
+      "the expensive ones get missed. At this price you read all of them.",
+    { x: M, y: 1.95, w: 6.4, h: 1.1, fontFace: SANS, fontSize: 14, color: LIGHT.mid, lineSpacingMultiple: 1.35 },
+  );
+
+  rule(s, LIGHT, 3.35, M, 11.6);
+  figure(s, LIGHT, { x: M, y: 3.6, w: 3.0, value: "$0.00012", label: "a complete assessment", accent: true, size: 32 });
+  figure(s, LIGHT, { x: M + 3.1, y: 3.6, w: 2.6, value: "27s", label: "a scanned notice, end to end", size: 32 });
+  figure(s, LIGHT, { x: M + 5.9, y: 3.6, w: 2.6, value: "0", label: "credits when the form says it plainly", size: 32 });
+  figure(s, LIGHT, { x: M + 8.7, y: 3.6, w: 2.8, value: "60s", label: "the request limit we had to fit inside", size: 32 });
+
+  s.addText("Every stage reports its own cost on screen, so nobody has to take our word for it.", {
+    x: M, y: 5.55, w: 11.6, h: 0.4, fontFace: SANS, fontSize: 13, color: LIGHT.fg,
+  });
+
+  partners(s, LIGHT);
+}
+
+/* ---------------------------------------------------------------- 9. close */
+
+{
+  const s = slide(DARK);
   s.addText(
     [
-      { text: "AMD Token Factory  ", options: { bold: true, color: C.text1 } },
-      { text: "— every model call, on AMD GPUs", options: { color: THEME.colors.dk2, breakLine: true } },
-      { text: "Evolus  ", options: { bold: true, color: C.text1 } },
-      { text: "— agent on that same AMD endpoint, plus translate, doc-structure and email", options: { color: THEME.colors.dk2, breakLine: true } },
-      { text: "Impact engine  ", options: { bold: true, color: C.text1 } },
-      { text: "— TypeScript, deterministic, auditable", options: { color: THEME.colors.dk2 } },
+      { text: "Obsolescence management is already an industry.\n", options: { color: DARK.fg } },
+      { text: "Every tool in it is a database you search.\n", options: { color: DARK.fg } },
+      { text: "This one reads the letter and tells you what breaks.", options: { color: DARK.accent } },
     ],
-    { isTextBox: true, x: 7.4, y: 4.35, w: 4.9, h: 1.7, fontSize: 13, lineSpacingMultiple: 1.35 },
+    { x: M, y: 2.0, w: 11.2, h: 2.6, fontFace: SANS, fontSize: 28, bold: true, lineSpacingMultiple: 1.22 },
   );
-  s.addNotes("Close on the number. No thank-you slide.");
+
+  rule(s, DARK, 4.95, M, 11.6);
+  const links = [
+    ["LIVE", "lychee-seven.vercel.app"],
+    ["CODE", "github.com/bukhari-hamzamukhtar"],
+    ["EVOLUS WORKSPACE", "lychee"],
+  ];
+  let x = M;
+  for (const [k, v] of links) {
+    s.addText(k, {
+      x, y: 5.2, w: 3.8, h: 0.28,
+      fontFace: SANS, fontSize: 10, bold: true, charSpacing: 1.6, color: DARK.dim,
+    });
+    s.addText(v, { x, y: 5.5, w: 3.9, h: 0.32, fontFace: MONO, fontSize: 13, color: DARK.fg });
+    x += 3.9;
+  }
+
+  s.addText("Gemma-4-31B-IT on AMD Instinct   ·   Evolus   ·   impact by graph traversal, not generation", {
+    x: M, y: 6.45, w: 11.6, h: 0.3, fontFace: SANS, fontSize: 12, color: DARK.mid,
+  });
 }
 
-(async () => {
-  await pres.writeFile({ fileName: OUT });
-  console.log("wrote", OUT);
-})();
+pptx
+  .writeFile({ fileName: OUT })
+  .then(() => console.log("wrote", OUT))
+  .catch((e) => {
+    console.error("failed:", e.message);
+    process.exit(1);
+  });

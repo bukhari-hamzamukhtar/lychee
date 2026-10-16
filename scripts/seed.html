@@ -1,0 +1,144 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>seeding</title>
+<!--
+  Screenshot setup, served from the app's own origin so it can write the
+  workspace's localStorage. A headless browser loads this once with a persistent
+  profile; every capture afterwards opens already signed in with the example
+  factory loaded, which is the state the screens are worth photographing in.
+
+  Deleted after the captures. It is not part of the product.
+-->
+<body style="font: 14px system-ui; padding: 2rem">
+  <p id="out">seeding…</p>
+  <script>
+    const ACCOUNT = {
+      id: "Udemo01",
+      email: "hamza@lastbuy.app",
+      name: "Hamza",
+      // Never used: nothing signs in again, the session below is set directly.
+      hash: "",
+      salt: "",
+      createdAt: "2026-10-17T00:00:00.000Z",
+    };
+
+    // A conversation that has already happened, so the Ask screen photographs
+    // as something in use rather than an empty box. The answer is a real one,
+    // copied verbatim from a live run against the Hittite PDF.
+    const CHAT = {
+      id: "Cdemo01",
+      title: "What does this notice change?",
+      createdAt: "2026-10-17T09:12:00.000Z",
+      turns: [
+        {
+          role: "user",
+          content:
+            "What does the Hittite notice change, when is the last-time buy, and which of my parts does it touch?",
+        },
+        {
+          role: "assistant",
+          content:
+            "It is a process change, not a discontinuation: a switch of Sn/Pb plating vendor, " +
+            "with no impact anticipated on form, fit, function, quality or reliability " +
+            "[PCN140002_PCNForm.pdf].\n\n" +
+            "Last-time buy for the unchanged product is 2014-02-01; last-time delivery is " +
+            "2014-03-28 [PCN140002_PCNForm.pdf].\n\n" +
+            "It names five components in your bill of materials, all under the RF front end: " +
+            "HMC174MS8, HMC187MS8, HMC213MS8, HMC311ST89 and HMC346MS8G [engine].",
+          ms: 2062,
+          costUsd: 0.0000387,
+        },
+      ],
+      assertions: [
+        {
+          id: "Aseed1",
+          subject: "PCN140002",
+          claim: "PCN140002 is a process change that switches the Sn/Pb plating vendor.",
+          standing: "stated",
+          provenance: {
+            kind: "document",
+            ref: "PCN140002_PCNForm.pdf",
+            by: "Gemma-4-31B-IT",
+            at: "2026-10-17T09:12:30.000Z",
+          },
+        },
+        {
+          id: "Aseed2",
+          subject: "PCN140002",
+          claim: "The last-time buy for the unchanged product is 2014-02-01.",
+          standing: "stated",
+          provenance: {
+            kind: "document",
+            ref: "PCN140002_PCNForm.pdf",
+            by: "Gemma-4-31B-IT",
+            at: "2026-10-17T09:12:30.000Z",
+          },
+        },
+        {
+          id: "Aseed3",
+          subject: "HMC311ST89",
+          claim: "HMC311ST89 sits under the RF front end and is named by PCN140002.",
+          standing: "derived",
+          provenance: {
+            kind: "engine",
+            ref: "bill of materials traversal",
+            by: "lib/graph.ts",
+            at: "2026-10-17T09:12:30.000Z",
+          },
+        },
+      ],
+    };
+
+    const SOURCES = [
+      {
+        id: "Sseed1",
+        filename: "PCN140002_PCNForm.pdf",
+        mime: "application/pdf",
+        bytes: 488025,
+        status: "ready",
+        text: "Product Change Notification\nPCN Number: PCN140002\nDescription of Change: Sn/Pb plating vendor change",
+        pageCount: 2,
+        ms: 27200,
+        addedAt: "2026-10-17T09:10:00.000Z",
+      },
+      {
+        id: "Sseed2",
+        filename: "rf_frontend_bom.csv",
+        mime: "text/csv",
+        bytes: 838,
+        status: "ready",
+        text: "Item,MPN,Part Description,Mfr,QTY per assy",
+        ms: 0,
+        addedAt: "2026-10-17T09:10:20.000Z",
+      },
+    ];
+
+    const WORKSPACE = {
+      uploaded: [],
+      approvals: [],
+      assessments: [],
+      bom: null,
+      demo: true,
+      sources: SOURCES,
+      chats: [CHAT],
+      activeChatId: CHAT.id,
+    };
+
+    try {
+      localStorage.setItem("lastbuy.accounts.v1", JSON.stringify([ACCOUNT]));
+      localStorage.setItem("lastbuy.session.v1", ACCOUNT.id);
+      localStorage.setItem(
+        "lastbuy.workspace.v1:" + ACCOUNT.id,
+        JSON.stringify(WORKSPACE),
+      );
+      localStorage.setItem("lastbuy.theme", new URLSearchParams(location.search).get("theme") || "light");
+      document.getElementById("out").textContent = "seeded";
+      // Seed and go in one browser run: a separate run would need localStorage
+      // flushed to the profile on exit, which headless does not guarantee.
+      const to = new URLSearchParams(location.search).get("to");
+      if (to) location.replace(to);
+    } catch (e) {
+      document.getElementById("out").textContent = "FAILED " + e;
+    }
+  </script>
+</body>
