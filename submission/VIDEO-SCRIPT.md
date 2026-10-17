@@ -49,10 +49,26 @@ products. Nine million euros of revenue behind them, every year.
 Ask it again tomorrow and you get the same number, because it is arithmetic. The
 models read documents and write the memo. They never make a number you act on.
 
-### 1:05 — 1:30 · a real letter
+### 1:05 — 1:25 · how it is put together
+> **[frame: 20-landing-full.png — hold on the two architecture diagrams]**
+
+Here is the whole thing on one picture. You give it two things: the letter, and
+your bill of materials. Everything runs in your browser, and behind that there
+are three services.
+
+AMD reads the document and writes the words. Evolus rules on the certificates.
+And the impact engine — the box on the right — never calls a model at all. That
+is the one that produces the numbers.
+
+The second picture is the decision the whole pipeline turns on. The notice comes
+in, we read the form, and then we ask one question: did the page already say it?
+If yes, we go straight across the top. If not, and only then, the model fills the
+gap.
+
+### 1:25 — 1:50 · a real letter
 > **[frame: 13-notice-impact.png]**
 
-We tested it on a letter nobody wrote for us — a real Hittite Microwave notice
+We tested it on a real Hittite Microwave notice
 from 2014. Four hundred and eighty-eight kilobytes, scanned.
 
 Here is the thing we got wrong first. We sent the whole document to the model,
@@ -66,7 +82,7 @@ form first, and only ask the model for what the page does not say.
 Twenty-seven seconds. Five parts matched. Last-time buy, second of February
 twenty-fourteen, read straight off its own label. No credits spent.
 
-### 1:30 — 1:55 · ask
+### 1:50 — 2:10 · ask
 > **[frame: 14-ask-in-use.png]**
 
 You can also just ask it things. Drop in as many documents as you want and ask
@@ -81,7 +97,7 @@ claims — each one with its subject, how it is known, and which document it cam
 from — and then we throw the messages away. A summary cannot be checked. A claim
 can.
 
-### 1:55 — 2:20 · what it runs on
+### 2:10 — 2:30 · what it runs on
 > **[frames: 03-parts.png, then 09-ask.png — the strip under the nav is on both]**
 
 Everything runs on AMD. Gemma reads the notices and writes the memos, served on
@@ -93,7 +109,7 @@ The certification rules come from an Evolus agent, in a workspace called lychee,
 pointed at that same AMD model. It cites the standard and the clause every time,
 and when the documents do not cover something, it says so instead of guessing.
 
-### 2:20 — 2:40 · cost
+### 2:30 — 2:45 · cost
 > **[frame: 20-landing-full.png — hold on the cost section]**
 
 A complete assessment costs about a hundredth of a cent.
@@ -102,7 +118,7 @@ That number matters more than it looks. Most teams triage — they only look at
 the notices that seem important. That is exactly how the expensive ones get
 missed. At this price, you read every single one.
 
-### 2:40 — 3:00 · close
+### 2:45 — 3:00 · close
 > **[frame: 21-landing-full-dark.png — hold on the closing line]**
 
 Obsolescence management is already an industry. Every tool in it is a database
@@ -121,7 +137,7 @@ It is live, the code is public, and every figure on screen is one you can check.
 | 1 | `11-landing-hero-dark.png` | opening, dark |
 | 2 | `01-landing-hero.png` | the product, light |
 | 3 | `02-notices-empty.png` | the dropzone |
-| 4 | `20-landing-full.png` | full page — the fan diagram and the cost section |
+| 4 | `20-landing-full.png` | full page — the fan diagram, the two architecture diagrams, the cost section |
 | 5 | `13-notice-impact.png` | one notice, assessed |
 | 6 | `14-ask-in-use.png` | Ask, with a cited answer |
 | 7 | `03-parts.png` | risk scored before any notice arrives |
@@ -163,8 +179,26 @@ Paste this, attach `VIDEO-SCRIPT.md`, and attach the frames from
 > middle light. Any text you put on screen should be plain sans-serif, small, and
 > in a corner — the screenshots are the content, not a backdrop for captions.
 >
-> **Pacing:** about twenty to twenty-five seconds a section, eight sections.
-> Leave a breath between sections rather than cutting straight through.
+> **Highlight what is being said.** This is the important one. When the narration
+> names something that is visible on screen, draw attention to that exact part of
+> the image while the line is being read — a soft rectangle around it, a dimming
+> of everything else, or a slow push in on that region. Some examples:
+>
+> - "sign in" or "an account" → the sign-in panel
+> - "drop the letter in" → the dropzone
+> - "five products" → the five product boxes at the right of the fan diagram
+> - "twenty-seven seconds" → the timing row in the pipeline diagram
+> - "the impact engine never calls a model" → that box in the architecture diagram
+> - "ends with the filename" → the bracketed source at the end of Vigil's answer
+> - "a hundredth of a cent" → the cost figure
+>
+> One highlight at a time, appearing as the words are said and fading when the
+> sentence ends. Never highlight something the narrator is not talking about, and
+> never leave three boxes lit at once — the point is to put the viewer's eye in
+> the right place, not to decorate the frame.
+>
+> **Pacing:** about twenty to twenty-five seconds a section, nine sections. Leave
+> a breath between sections rather than cutting straight through.
 >
 > **Do not:** add a logo animation, add a call-to-action card at the end, add
 > captions that restate the narration word for word, speed up or time-lapse the

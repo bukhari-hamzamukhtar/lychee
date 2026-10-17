@@ -85,8 +85,8 @@ shot 14-ask-in-use              "/ask"                        light 11000
 shot 15-notice-impact-dark      "/notices/PCN-ADI-2026-4471"  dark  12000
 
 echo "full pages"
-tall 20-landing-full            "/"                       light 7600 26000
-tall 21-landing-full-dark       "/"                       dark  7600 26000
+tall 20-landing-full            "/"                       light 9400 30000
+tall 21-landing-full-dark       "/"                       dark  9400 30000
 tall 22-parts-full              "/parts"                  light 3400
 tall 23-products-full           "/products"               light 2800
 tall 24-certifications-full     "/certifications"         light 2800

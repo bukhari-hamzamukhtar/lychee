@@ -58,13 +58,17 @@ const STEPS = [
 import { Tour } from "@/components/Tour";
 import { VigilWatch } from "@/components/VigilWatch";
 import { TwoAnswers } from "@/components/TwoAnswers";
+import { SystemMap } from "@/components/diagrams/SystemMap";
+import { NoticeFlow } from "@/components/diagrams/NoticeFlow";
+import { ContextGraphDiagram } from "@/components/diagrams/ContextGraph";
 
 export default function Landing() {
   return (
     <div>
       {/* ------------------------------------------------ hero */}
       <section className="relative overflow-hidden border-b border-line">
-        <div className="mx-auto max-w-[1320px] px-8 pb-28 pt-24 sm:pt-32">
+        <div className="mx-auto grid max-w-[1320px] items-start gap-16 px-8 pb-28 pt-24 sm:pt-32 lg:grid-cols-[minmax(0,1fr)_minmax(0,500px)]">
+          <div>
           <Reveal>
             <Eyebrow>Component obsolescence management</Eyebrow>
           </Reveal>
@@ -90,6 +94,10 @@ export default function Landing() {
                 See how it works
               </Button>
             </div>
+          </Reveal>
+          </div>
+          <Reveal delay={2}>
+            <SystemMap />
           </Reveal>
         </div>
 
@@ -199,6 +207,45 @@ export default function Landing() {
               ))}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ------------------------------------------------ how it is built */}
+      <section id="architecture" className="scroll-mt-16 border-b border-line">
+        <div className="mx-auto max-w-[1320px] px-8 py-24">
+          <Reveal>
+            <Eyebrow>How it is built</Eyebrow>
+            <h2 className="mt-5 max-w-[24ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
+              One decision explains the whole pipeline.
+            </h2>
+            <p className="mt-5 max-w-[66ch] text-[15.5px] leading-relaxed text-mid">
+              A supplier notice is a form, not an essay. So the form is read first, and a
+              model is asked only for what the page did not state. That ordering is the
+              difference between an answer and a request that times out.
+            </p>
+          </Reveal>
+
+          <Reveal delay={1}>
+            <div className="mt-14 overflow-x-auto pb-2">
+              <div className="min-w-[860px]">
+                <NoticeFlow />
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal delay={2}>
+            <div className="mt-20 border-t border-line pt-14">
+              <Eyebrow>What the agent keeps</Eyebrow>
+              <h3 className="mt-5 max-w-[26ch] text-[clamp(1.3rem,2.2vw,1.75rem)] font-normal leading-[1.2] tracking-[-0.02em]">
+                A conversation is thrown away. What it established is not.
+              </h3>
+              <div className="mt-11 overflow-x-auto pb-2">
+                <div className="min-w-[820px]">
+                  <ContextGraphDiagram />
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 

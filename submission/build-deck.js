@@ -45,7 +45,11 @@ const SANS = "Arial";
 const MONO = "Consolas";
 
 const pptx = new pptxgen();
-pptx.layout = "LAYOUT_16x9"; // 13.333 x 7.5 inches
+// LAYOUT_16x9 is 10 x 5.625in, which is a trap: it is 16:9 but it is not the
+// widescreen page everything here is positioned for. LAYOUT_WIDE is the
+// 13.333 x 7.5in one. Getting this wrong pushes a third of every slide off the
+// page, and it looks fine in the XML because the shapes are where you put them.
+pptx.layout = "LAYOUT_WIDE"; // 13.333 x 7.5 inches
 pptx.author = "Hamza Mukhtar Bukhari";
 pptx.company = "LastBuy";
 pptx.title = "LastBuy - know what a discontinued part breaks";
@@ -375,37 +379,66 @@ function figure(s, theme, { x, y, w, value, label, accent = false, size = 40 }) 
   partners(s, LIGHT);
 }
 
-/* ---------------------------------------------------------------- 9. close */
+/* -------------------------------------------------- 9. contributions + close */
 
 {
   const s = slide(DARK);
+
+  s.addText("Contributions", {
+    x: M, y: 0.8, w: 6.0, h: 0.6,
+    fontFace: SANS, fontSize: 30, bold: true, color: DARK.fg,
+  });
+  s.addText("What this is actually for.", {
+    x: M, y: 1.45, w: 6.0, h: 0.35, fontFace: SANS, fontSize: 14, color: DARK.dim,
+  });
+
+  const gives = [
+    ["Keeps products alive", "A missed last-time buy ends a product line. Nobody meant to miss it - they just could not work it out in time."],
+    ["Not only for big firms", "A hundredth of a cent a notice, and your own spreadsheet is the input. No enterprise licence, no data migration."],
+    ["Numbers you can check", "Every figure is arithmetic over your bill of materials. Nobody should sign a 1.4 million euro order on a model's word."],
+    ["Less thrown away", "Buy the quantity the maths gives you, not the panic order that gets scrapped three years later."],
+  ];
+  let y = 2.1;
+  for (const [title, body] of gives) {
+    rule(s, DARK, y - 0.14, M, 6.0);
+    s.addText(title, {
+      x: M, y, w: 6.0, h: 0.3, fontFace: SANS, fontSize: 14.5, bold: true, color: DARK.accent,
+    });
+    s.addText(body, {
+      x: M, y: y + 0.34, w: 6.0, h: 0.62,
+      fontFace: SANS, fontSize: 11.5, color: DARK.mid, lineSpacingMultiple: 1.28,
+    });
+    y += 1.18;
+  }
+
+  // the closing line, on the right
   s.addText(
     [
       { text: "Obsolescence management is already an industry.\n", options: { color: DARK.fg } },
-      { text: "Every tool in it is a database you search.\n", options: { color: DARK.fg } },
+      { text: "Every tool in it is a database you search.\n\n", options: { color: DARK.fg } },
       { text: "This one reads the letter and tells you what breaks.", options: { color: DARK.accent } },
     ],
-    { x: M, y: 2.0, w: 11.2, h: 2.6, fontFace: SANS, fontSize: 28, bold: true, lineSpacingMultiple: 1.22 },
+    { x: 7.5, y: 1.9, w: 5.0, h: 2.6, fontFace: SANS, fontSize: 20, bold: true, lineSpacingMultiple: 1.25 },
   );
 
-  rule(s, DARK, 4.95, M, 11.6);
+  rule(s, DARK, 4.85, 7.5, 5.0);
   const links = [
     ["LIVE", "lychee-seven.vercel.app"],
     ["CODE", "github.com/bukhari-hamzamukhtar"],
     ["EVOLUS WORKSPACE", "lychee"],
   ];
-  let x = M;
+  let ly = 5.05;
   for (const [k, v] of links) {
     s.addText(k, {
-      x, y: 5.2, w: 3.8, h: 0.28,
-      fontFace: SANS, fontSize: 10, bold: true, charSpacing: 1.6, color: DARK.dim,
+      x: 7.5, y: ly, w: 2.4, h: 0.26,
+      fontFace: SANS, fontSize: 9.5, bold: true, charSpacing: 1.4, color: DARK.dim,
     });
-    s.addText(v, { x, y: 5.5, w: 3.9, h: 0.32, fontFace: MONO, fontSize: 13, color: DARK.fg });
-    x += 3.9;
+    s.addText(v, { x: 9.3, y: ly, w: 3.2, h: 0.26, fontFace: MONO, fontSize: 11.5, color: DARK.fg });
+    ly += 0.42;
   }
 
   s.addText("Gemma-4-31B-IT on AMD Instinct   ·   Evolus   ·   impact by graph traversal, not generation", {
-    x: M, y: 6.45, w: 11.6, h: 0.3, fontFace: SANS, fontSize: 12, color: DARK.mid,
+    x: M, y: 6.85, w: 11.6, h: 0.3, fontFace: SANS, fontSize: 11, color: DARK.mid,
   });
 }
 

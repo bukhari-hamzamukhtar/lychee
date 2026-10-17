@@ -15,8 +15,6 @@ const { execFileSync } = require("child_process");
 
 const FILE = process.argv[2] || path.join(__dirname, "LastBuy.pptx");
 const EMU = 914400; // English Metric Units per inch
-const W = 13.333;
-const H = 7.5;
 
 /** pptx is a zip; PowerShell can open one without us adding a dependency. */
 function unzip(file) {
@@ -35,6 +33,19 @@ function unzip(file) {
 }
 
 const dir = unzip(FILE);
+
+// Read the page size out of the file rather than assuming it. Assuming it is
+// how the first version of this passed a deck whose every slide overflowed.
+const presXml = fs.readFileSync(path.join(dir, "ppt", "presentation.xml"), "utf8");
+const size = presXml.match(/<p:sldSz[^>]*cx="(\d+)"[^>]*cy="(\d+)"/);
+if (!size) {
+  console.error("could not read the slide size from presentation.xml");
+  process.exit(1);
+}
+const W = +size[1] / EMU;
+const H = +size[2] / EMU;
+console.log(`page: ${W.toFixed(3)}in x ${H.toFixed(3)}in`);
+
 const slideDir = path.join(dir, "ppt", "slides");
 const slides = fs
   .readdirSync(slideDir)
