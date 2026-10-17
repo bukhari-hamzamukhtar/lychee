@@ -23,10 +23,12 @@ export function ScenarioControl({ report: r }: { report: ImpactReport }) {
 
   const scenario = useMemo(() => {
     const weeks = years * 52;
-    const needed = r.weeklyConsumption * weeks * (1 + buffer / 100);
+    // Reports saved before the exact figure existed fall back to the rounded one.
+    const perWeek = r.weeklyConsumptionExact ?? r.weeklyConsumption;
+    const needed = perWeek * weeks * (1 + buffer / 100);
     const qty = Math.max(0, Math.ceil(needed - r.stockQty));
     return { weeks, qty, cost: Math.round(qty * unitCost) };
-  }, [years, buffer, r.weeklyConsumption, r.stockQty, unitCost]);
+  }, [years, buffer, r.weeklyConsumptionExact, r.weeklyConsumption, r.stockQty, unitCost]);
 
   const delta = scenario.cost - r.lastBuyCostEur;
   const isBase = years === 3 && buffer === 10;

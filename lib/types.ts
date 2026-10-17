@@ -93,7 +93,14 @@ export interface ImpactReport {
   affectedCustomers: { customerId: string; name: string; annualUnits: number; productIds: string[] }[];
   affectedCertifications: { id: string; name: string; clause: string; requalWeeks: number; requalCostEur: number }[];
   stockQty: number;
+  /** Rounded to one decimal, for display. */
   weeklyConsumption: number;
+  /**
+   * The same figure unrounded. Anything that re-derives the order size has to
+   * start from this: from the rounded one, the scenario panel came out 7 units
+   * away from the assessment it sits under.
+   */
+  weeklyConsumptionExact?: number;
   runwayWeeks: number;
   /** Weeks to replenish this part. Per part, never assumed. */
   leadTimeWeeks: number;

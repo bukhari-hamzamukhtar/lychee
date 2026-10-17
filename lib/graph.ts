@@ -313,6 +313,7 @@ export function impactOf(partId: string, lastBuyDate: string, asOf: Date): Impac
     affectedCertifications,
     stockQty,
     weeklyConsumption: round1(weeklyConsumption),
+    weeklyConsumptionExact: weeklyConsumption,
     runwayWeeks: Number.isFinite(runwayWeeks) ? round1(runwayWeeks) : Infinity,
     leadTimeWeeks,
     coverGapWeeks,
