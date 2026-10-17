@@ -147,12 +147,12 @@ export default function Landing() {
                 <p className="mt-1 text-[13px] text-dim">a digital isolator from Analog Devices</p>
 
                 {/* A fixed first column, so every label starts at the same x whatever
-                    width the number is — "€9.05M" and "3" share one left edge. */}
+                    width the number is — "€9.06M" and "3" share one left edge. */}
                 <dl className="mt-6 border-t border-line">
                   {[
                     ["3", "assemblies it sits inside"],
                     ["5", "finished products that stop without it"],
-                    ["€9.05M", "a year of revenue behind those products"],
+                    ["€9.06M", "a year of revenue behind those products"],
                     ["34 days", "to place the last order"],
                   ].map(([v, l], i) => (
                     <div

@@ -56,14 +56,20 @@ let problems = 0;
 console.log(`${path.basename(FILE)} — ${slides.length} slides\n`);
 
 for (const file of slides) {
-  const xml = fs.readFileSync(path.join(slideDir, file), "utf8");
+  // Shapes named "deco" are the background circles, drawn hanging off the page
+  // on purpose. Everything else has to fit.
+  const xml = fs
+    .readFileSync(path.join(slideDir, file), "utf8")
+    .split("<p:sp>")
+    .filter((chunk, i) => i === 0 || !/<p:cNvPr id="\d+" name="deco"/.test(chunk.split("</p:sp>")[0]))
+    .join("<p:sp>");
   const n = file.match(/\d+/)[0];
 
   // every a:off/a:ext pair is one placed shape
   const offs = [...xml.matchAll(/<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/g)];
   const texts = [...xml.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]);
   const images = (xml.match(/<a:blip/g) || []).length;
-  const dark = /srgbClr val="08090B"/.test(xml);
+  const dark = /<p:bg>[\s\S]*?srgbClr val="(08090B|0B0C0F)"/.test(xml);
 
   let worst = null;
   for (const m of offs) {
@@ -96,7 +102,8 @@ for (const file of slides) {
       const runs = [...para.matchAll(/<a:rPr[^>]*?sz="(\d+)"[^>]*>[\s\S]*?<a:t>([^<]*)<\/a:t>/g)];
       if (!runs.length) continue;
       const pt = Math.max(...runs.map((r) => +r[1] / 100));
-      const chars = runs.reduce((n, r) => n + r[2].length, 0);
+      // count characters as they will be drawn, not as XML escapes them
+      const chars = runs.reduce((n, r) => n + r[2].replace(/&[a-z]+;/g, "_").length, 0);
       const perLine = Math.max(1, (bw * 72) / (pt * 0.52));
       // a soft line break inside a paragraph is written as <a:br/>
       const breaks = (para.match(/<a:br\/>/g) || []).length;
