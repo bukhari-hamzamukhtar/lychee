@@ -30,6 +30,13 @@ interface Edge {
   step: number;
 }
 
+// Theme colours, so the graph is right in both themes. Every label sits on a
+// knockout in the page colour; with that hard-coded to the dark page, the light
+// theme drew each node as a solid black box.
+const ACCENT = "rgb(var(--accent))";
+const FG = "rgb(var(--fg))";
+const DIM = "rgb(var(--dim))";
+
 const COL_W = 196;
 const ROW_H = 54;
 const PAD_X = 16;
@@ -183,10 +190,12 @@ export function PropagationGraph({
               key={i}
               d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`}
               fill="none"
-              stroke={on ? "#FF4D2E" : "#1C1F24"}
               strokeWidth={on ? 1.25 : 1}
               opacity={on ? 0.75 : 1}
-              style={{ transition: "stroke 520ms ease, opacity 520ms ease, stroke-width 520ms ease" }}
+              style={{
+                stroke: on ? ACCENT : "rgb(var(--line))",
+                transition: "stroke 520ms ease, opacity 520ms ease, stroke-width 520ms ease",
+              }}
             />
           );
         })}
@@ -208,9 +217,11 @@ export function PropagationGraph({
                 y1={yOf(n) - 15}
                 x2={x(n)}
                 y2={yOf(n) + 15}
-                stroke={on ? (isPart ? "#FF4D2E" : isProduct ? "#F2F4F7" : "#9BA3AE") : "#32373F"}
                 strokeWidth={isPart || isProduct ? 2 : 1}
-                style={{ transition: "stroke 520ms ease" }}
+                style={{
+                  stroke: on ? (isPart ? ACCENT : isProduct ? FG : DIM) : "rgb(var(--line-bright))",
+                  transition: "stroke 520ms ease",
+                }}
               />
               {/* Edges pass behind labels; a knockout in the page colour keeps
                   the text readable without introducing a visible box. */}
@@ -219,15 +230,14 @@ export function PropagationGraph({
                 y={yOf(n) - 14}
                 width={124}
                 height={28}
-                fill="#08090B"
+                style={{ fill: "rgb(var(--bg))" }}
               />
               <text
                 x={x(n) + 10}
                 y={yOf(n) - 2}
                 fontSize={11}
                 fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-                fill={on ? (isPart ? "#FF4D2E" : "#F2F4F7") : "#6B7280"}
-                style={{ transition: "fill 520ms ease" }}
+                style={{ fill: on ? (isPart ? ACCENT : FG) : DIM, transition: "fill 520ms ease" }}
               >
                 {n.label}
               </text>
@@ -235,7 +245,7 @@ export function PropagationGraph({
                 x={x(n) + 10}
                 y={yOf(n) + 12}
                 fontSize={10}
-                fill="#6B7280"
+                style={{ fill: DIM }}
               >
                 {isProduct && n.qty !== undefined
                   ? `${n.qty} per unit`
