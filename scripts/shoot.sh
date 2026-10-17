@@ -5,6 +5,11 @@
 # styled, fast and identical to what is deployed — and at a real 1920x1080
 # rather than whatever a preview pane happens to be wide.
 #
+# Captures ask for reduced motion. The landing page fades sections in as they
+# scroll into view, and a tall headless window races those fades: half the
+# page came back still transparent. With reduced motion everything is simply
+# there, which is also the honest state to photograph.
+#
 # Every capture goes through /_seed.html first, which writes the account and
 # the example factory into localStorage and then redirects. A separate seeding
 # run would not work: headless does not reliably flush localStorage to the
@@ -19,6 +24,10 @@ CHROME="/c/Program Files/Google/Chrome/Application/chrome.exe"
 PROFILE="${TMPDIR:-/tmp}/lastbuy-shots-profile"
 
 mkdir -p "$OUT"
+# Chrome does not start in this directory, so a relative --screenshot path is
+# written nowhere. Hand it an absolute one, in the form Windows Chrome reads.
+ABS="$(cd "$OUT" && pwd)"
+command -v cygpath >/dev/null && ABS="$(cygpath -m "$ABS")"
 rm -rf "$PROFILE"; mkdir -p "$PROFILE"
 
 # The seed page has to be served from the app's own origin to write its
@@ -35,11 +44,13 @@ cp "$SEED_SRC" .next/standalone/public/_seed.html 2>/dev/null || true
 shot() {
   local name="$1" path="$2" theme="${3:-light}" budget="${4:-9000}"
   local url="http://localhost:${PORT}/_seed.html?theme=${theme}&to=$(printf '%s' "$path" | sed 's|/|%2F|g;s|?|%3F|g;s|&|%26|g;s|#|%23|g')"
+  # an old file left in place would read as a capture that worked
+  rm -f "${OUT}/${name}.png"
   "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
-    --hide-scrollbars --force-device-scale-factor=1 \
+    --hide-scrollbars --force-device-scale-factor=1 --force-prefers-reduced-motion \
     --user-data-dir="$PROFILE" --window-size=1920,1080 \
     --virtual-time-budget="$budget" \
-    --screenshot="${OUT}/${name}.png" "$url" >/dev/null 2>&1
+    --screenshot="${ABS}/${name}.png" "$url" >/dev/null 2>&1
   if [ -f "${OUT}/${name}.png" ]; then
     printf '  %-34s %s\n' "$name" "$(du -k "${OUT}/${name}.png" | cut -f1)KB"
   else
@@ -68,8 +79,13 @@ shot 12-parts-dark              "/parts"                  dark
 # material for a video than a stack of guessed scroll positions.
 tall() {
   local name="$1" path="$2" theme="${3:-light}" h="${4:-4200}" budget="${5:-11000}"
+  # A long capture can leave Chrome holding the profile for a moment after it
+  # writes the file; launching the next one into a locked profile exits without
+  # a picture. Give it time to let go.
+  sleep 3
   local url="http://localhost:${PORT}/_seed.html?theme=${theme}&to=$(printf '%s' "$path" | sed 's|/|%2F|g')"
-  "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check     --hide-scrollbars --force-device-scale-factor=1     --user-data-dir="$PROFILE" --window-size="1920,${h}"     --virtual-time-budget="$budget"     --screenshot="${OUT}/${name}.png" "$url" >/dev/null 2>&1
+  rm -f "${OUT}/${name}.png"
+  "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check     --hide-scrollbars --force-device-scale-factor=1 --force-prefers-reduced-motion     --user-data-dir="$PROFILE" --window-size="1920,${h}"     --virtual-time-budget="$budget"     --screenshot="${ABS}/${name}.png" "$url" >/dev/null 2>&1
   if [ -f "${OUT}/${name}.png" ]; then
     printf '  %-34s %s
 ' "$name" "$(du -k "${OUT}/${name}.png" | cut -f1)KB"
@@ -85,8 +101,11 @@ shot 14-ask-in-use              "/ask"                        light 11000
 shot 15-notice-impact-dark      "/notices/PCN-ADI-2026-4471"  dark  12000
 
 echo "full pages"
-tall 20-landing-full            "/"                       light 9400 30000
-tall 21-landing-full-dark       "/"                       dark  9400 30000
+# 9900 tall: the landing is 9862px at 1920 wide. Shorter, and the bottom of the
+# page is never laid out, so the capture used to come back missing.
+tall 20-landing-full            "/"                       light 9900 30000
+tall 21-landing-full-dark       "/"                       dark  9900 30000
+tall 27-notice-impact-full      "/notices/PCN-ADI-2026-4471"  light 3600 14000
 tall 22-parts-full              "/parts"                  light 3400
 tall 23-products-full           "/products"               light 2800
 tall 24-certifications-full     "/certifications"         light 2800
