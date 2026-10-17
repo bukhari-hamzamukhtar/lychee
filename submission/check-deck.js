@@ -76,12 +76,49 @@ for (const file of slides) {
     }
   }
 
+  // Will the words fit inside their own box? Overflow past the page edge is the
+  // easy failure; text spilling out of a box that is on the page is the one that
+  // actually makes a deck look broken, and the XML cannot show it directly. So
+  // estimate: Arial averages about half an em per character, so lines are the
+  // text length over what fits in the box width, and height is lines times the
+  // font size times the line spacing.
+  const spills = [];
+  // each shape ends at its own closing tag; without this a table that follows a
+  // shape is read as part of it
+  for (const sp of xml.split("<p:sp>").slice(1).map((c) => c.split("</p:sp>")[0])) {
+    const box = sp.match(/<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/);
+    if (!box) continue;
+    const bw = +box[3] / EMU, bh = +box[4] / EMU;
+    if (bw < 0.2 || bh < 0.12) continue;
+    const spacing = +(sp.match(/<a:spcPct val="(\d+)"/)?.[1] ?? 100000) / 100000;
+    let need = 0;
+    for (const para of sp.split("<a:p>").slice(1)) {
+      const runs = [...para.matchAll(/<a:rPr[^>]*?sz="(\d+)"[^>]*>[\s\S]*?<a:t>([^<]*)<\/a:t>/g)];
+      if (!runs.length) continue;
+      const pt = Math.max(...runs.map((r) => +r[1] / 100));
+      const chars = runs.reduce((n, r) => n + r[2].length, 0);
+      const perLine = Math.max(1, (bw * 72) / (pt * 0.52));
+      // a soft line break inside a paragraph is written as <a:br/>
+      const breaks = (para.match(/<a:br\/>/g) || []).length;
+      const lines = Math.max(1, Math.ceil(chars / perLine)) + breaks;
+      need += (lines * pt * 1.2 * Math.max(spacing, 1)) / 72;
+    }
+    if (need > bh * 1.15 + 0.05) {
+      const t = (sp.match(/<a:t>([^<]*)<\/a:t>/) || [, ""])[1];
+      spills.push(`"${t.slice(0, 40)}" needs ~${need.toFixed(2)}in, box is ${bh.toFixed(2)}in`);
+    }
+  }
+
   const head = texts.find((t) => t.length > 12) || texts[0] || "(no text)";
   console.log(
     `  slide ${n.padStart(2)}  ${dark ? "dark " : "light"}  ` +
       `${String(offs.length).padStart(2)} shapes  ${images} image(s)  ${texts.length} runs`,
   );
   console.log(`            ${head.slice(0, 74)}`);
+  for (const sp of spills) {
+    problems++;
+    console.log(`            TEXT SPILLS  ${sp}`);
+  }
   if (worst) {
     problems++;
     console.log(
@@ -97,7 +134,7 @@ const all = slides
   .join(" ")
   .replace(/<[^>]+>/g, "");
 console.log("\nmentions:");
-for (const want of ["Gemma", "AMD", "Evolus", "lychee", "graph traversal", "lychee-seven.vercel.app"]) {
+for (const want of ["Gemma", "AMD", "Evolus", "lychee", "Vigil", "Contributions"]) {
   const hit = all.includes(want);
   if (!hit) problems++;
   console.log(`  ${hit ? "yes" : "NO "}  ${want}`);
