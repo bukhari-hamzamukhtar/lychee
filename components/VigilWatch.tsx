@@ -51,8 +51,10 @@ export function VigilWatch() {
   }, []);
 
   return (
-    <div ref={host} className="flex items-center justify-center py-6">
-      <div className="w-full max-w-[380px]">
+    // Fills its column rather than centring inside it, so its right edge lands on
+    // the same line as every other section's.
+    <div ref={host} className="py-6">
+      <div className="w-full">
         <div className="flex items-end gap-5">
           <VigilAvatar size={84} thinking={seen > 0 && seen < ARRIVALS.length} />
           <div className="flex-1 pb-2">

@@ -88,10 +88,10 @@ export function NoticeFlow() {
   return (
     <figure className="w-full">
       <svg
-        viewBox="0 0 980 356"
+        viewBox="0 0 980 330"
         className="h-auto w-full text-fg"
         role="img"
-        aria-label="A notice is read by MinerU on AMD, then by deterministic readers. If the form states its category, its last-time-buy date and its part numbers, the pipeline goes straight to matching against the bill of materials in twenty-seven seconds for no credits. If anything is missing, it goes through Evolus extraction and Gemma normalisation first, taking about fifty-four seconds in total, and the extractor is skipped if reading the document already used too much of the sixty second limit."
+        aria-label="A notice is read by MinerU on AMD, then by deterministic readers. If the form states its category, its last-time-buy date and its part numbers, the pipeline goes straight to matching against the bill of materials in twenty-seven seconds for no credits. If anything is missing, it goes through Evolus extraction and Gemma normalisation first, taking about fifty-four seconds in total."
       >
         <defs>
           <marker id="flowArrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -151,9 +151,6 @@ export function NoticeFlow() {
         />
         <Arrow d="M778 212 L812 212" quiet />
         <Step x={812} y={192} w={150} title="Gemma normalise" meta="fill the gap · 17s" tone="quiet" />
-        <text x={628} y={246} className="fill-current text-[9.5px]" opacity={0.5}>
-          the extractor is dropped if reading already took too long
-        </text>
         <Arrow d="M962 192 L962 166 L780 166 L780 150" quiet />
 
         {/* ---------- what each route costs ---------- */}
@@ -172,10 +169,7 @@ export function NoticeFlow() {
             Model needed
           </text>
           <text x={118} y={312} className="fill-current text-[11px]">
-            about 54s · 10.6 credits · $0.000066 — inside the 60s limit, and the
-          </text>
-          <text x={118} y={328} className="fill-current text-[11px]">
-            extractor is skipped rather than overrun it
+            about 54s · 10.6 credits · $0.000066
           </text>
         </g>
       </svg>
@@ -183,9 +177,6 @@ export function NoticeFlow() {
       <figcaption className="mt-4 max-w-[80ch] text-[12.5px] leading-relaxed text-dim">
         A supplier notice is a form. It ticks its own category and prints its last-time-buy
         date beside a label. When the page says all of that, the lower route never runs.
-        When it does run, the request is on a clock: whatever time reading the document
-        already took comes out of the budget, and the optional extractor is dropped before
-        the limit is, so a hard document gets a worse answer rather than no answer.
       </figcaption>
     </figure>
   );

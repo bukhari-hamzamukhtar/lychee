@@ -93,7 +93,7 @@ export function Tour() {
 
   return (
     <section id="tour" className="scroll-mt-16 border-b border-line">
-      <div className="mx-auto max-w-[1180px] px-8 py-20">
+      <div className="mx-auto max-w-[1320px] px-8 py-24">
         <Eyebrow>A worked example</Eyebrow>
         <h2 className="mt-5 max-w-[26ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
           One notice arrives. Here is everything it touches.

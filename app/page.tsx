@@ -117,38 +117,62 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ------------------------------------------------ the stakes, in general terms */}
+      {/* ------------------------------------------------ the problem, on one real part */}
       <section className="border-b border-line">
         <div className="mx-auto max-w-[1320px] px-8 py-24">
-          <div className="grid gap-16 lg:grid-cols-[1.1fr_1fr]">
+          <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,500px)]">
             <Reveal>
-              <h2 className="max-w-[16ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
-                The notice is not the problem. Finding out what it breaks is.
+              <Eyebrow>The problem</Eyebrow>
+              <h2 className="mt-5 max-w-[20ch] text-[clamp(1.6rem,2.9vw,2.3rem)] font-normal leading-[1.15] tracking-[-0.02em]">
+                The letter is one line. What it breaks is the hard part.
               </h2>
               <p className="mt-7 max-w-[56ch] leading-relaxed text-mid">
-                A component sits inside a module, inside a board, inside three products,
-                under four customer contracts and two certificates. Nobody holds that in
-                their head. So it gets reconstructed by hand, in a spreadsheet, every time
-                a letter arrives — and the deadline is already running.
+                A supplier&apos;s letter gives you a part number and a date. It does not tell
+                you which of your products use that part, how many you will need, or what
+                you lose if you run out. Someone has to work that out by hand, across
+                spreadsheets — and the order has to be in before the date.
               </p>
               <p className="mt-5 max-w-[56ch] leading-relaxed text-mid">
-                Miss it and the part is gone for good. You redesign the product, or you
-                stop building it.
+                After that date the part is never sold again. You redesign the product, or
+                you stop building it.
               </p>
             </Reveal>
 
             <Reveal delay={1}>
-              <div className="space-y-px">
-                {[
-                  ["Days", "to work out one notice by hand"],
-                  ["3", "people typically pulled in"],
-                  ["0", "chances to buy it again afterwards"],
-                ].map(([v, l]) => (
-                  <div key={l} className="flex items-baseline gap-6 border border-line p-7">
-                    <span className="min-w-[4.5rem] text-[34px] font-semibold leading-none">{v}</span>
-                    <span className="text-[14px] leading-relaxed text-dim">{l}</span>
-                  </div>
-                ))}
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-dim">
+                  One part, traced
+                </p>
+                <p className="mt-2 font-mono text-[14px] text-fg">ADUM1201ARZ</p>
+                <p className="mt-1 text-[13px] text-dim">a digital isolator from Analog Devices</p>
+
+                {/* A fixed first column, so every label starts at the same x whatever
+                    width the number is — "€9.05M" and "3" share one left edge. */}
+                <dl className="mt-6 border-t border-line">
+                  {[
+                    ["3", "assemblies it sits inside"],
+                    ["5", "finished products that stop without it"],
+                    ["€9.05M", "a year of revenue behind those products"],
+                    ["34 days", "to place the last order"],
+                  ].map(([v, l], i) => (
+                    <div
+                      key={l}
+                      className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-x-5 border-b border-line py-4"
+                    >
+                      <dt
+                        className={`text-[26px] font-semibold leading-none tabular-nums ${
+                          i === 3 ? "text-accent" : "text-fg"
+                        }`}
+                      >
+                        {v}
+                      </dt>
+                      <dd className="text-[14px] leading-snug text-mid">{l}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="mt-4 text-[12px] text-dim">
+                  Worked out by the engine from the example factory&apos;s bill of materials.
+                </p>
               </div>
             </Reveal>
           </div>
@@ -319,7 +343,7 @@ export default function Landing() {
 
       {/* ------------------------------------------------ close */}
       <section>
-        <div className="mx-auto grid max-w-[1320px] items-start gap-14 px-8 py-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)]">
+        <div className="mx-auto grid max-w-[1320px] items-start gap-14 px-8 py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)]">
           <div>
           <Reveal>
             <p className="max-w-[24ch] text-[clamp(1.6rem,3vw,2.4rem)] font-normal leading-[1.18] tracking-[-0.02em]">
