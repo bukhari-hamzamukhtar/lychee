@@ -38,14 +38,17 @@ def frame(src: Image.Image, top: int, bottom: int) -> Image.Image:
     bg = src.getpixel((8, max(top, 0) + 4))[:3]
     h = bottom - top + PAD * 2
     w = max(CONTENT_RIGHT - CONTENT_LEFT + SIDE * 2, round(h * 16 / 9))
-    w = min(w, src.width)
     h = max(h, round(w * 9 / 16))
+    # A band taller than 16:9 at full width needs a canvas wider than the page.
+    # The page is centred on it and the sides filled with its own colour, so
+    # the frame is scaled down evenly instead of being squashed to fit.
+    cw = min(w, src.width)
     cx = (CONTENT_LEFT + CONTENT_RIGHT) // 2
-    x0 = max(0, min(cx - w // 2, src.width - w))
+    x0 = max(0, min(cx - cw // 2, src.width - cw))
 
     canvas = Image.new("RGB", (w, h), bg)
-    band = src.crop((x0, top, x0 + w, bottom)).convert("RGB")
-    canvas.paste(band, (0, (h - band.height) // 2))
+    band = src.crop((x0, top, x0 + cw, bottom)).convert("RGB")
+    canvas.paste(band, ((w - cw) // 2, (h - band.height) // 2))
     return canvas.resize((OUT_W, OUT_H), Image.LANCZOS)
 
 

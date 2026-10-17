@@ -1,0 +1,150 @@
+{
+  "voice": "en-US-AndrewNeural",
+  "rate": "-5%",
+  "note": "Narration follows submission/VIDEO-SCRIPT.md. Spellings are for the voice (A-D-U-M, Miner U, Last Buy). Each shot starts when its 'from' phrase is spoken; each cue lights its box when its 'at' phrase is spoken. Boxes are [x, y, w, h] on the 1920x1080 frame. Phrases are found in order, so a repeated phrase means the next one.",
+  "parts": [
+    {
+      "id": "hook",
+      "title": "The hook",
+      "text": "A supplier sends you a letter. One of your parts is being discontinued. You have thirty-four days to place one last order. After that, it's gone for good.",
+      "shots": [{ "image": "11-landing-hero-dark.png", "dark": true }],
+      "cues": [{ "at": "thirty-four days", "box": [322, 440, 572, 140] }]
+    },
+    {
+      "id": "problem",
+      "title": "The problem",
+      "text": "The letter is one line. The hard part is what it breaks. This one chip, A-D-U-M twelve-oh-one A-R-Z, sits inside three assemblies. Those go into five products. And those five products bring in nine million euros a year. Today, someone works that out by hand, in spreadsheets, before the date.",
+      "shots": [{ "image": "49-landing-the-problem.png" }],
+      "cues": [
+        { "at": "The letter is one line", "box": [105, 335, 620, 125] },
+        { "at": "three assemblies", "box": [1122, 422, 693, 76] },
+        { "at": "go into five products", "box": [1122, 502, 693, 76] },
+        { "at": "nine million euros", "box": [1122, 582, 693, 76] },
+        { "at": "before the date", "box": [1122, 662, 693, 76] }
+      ]
+    },
+    {
+      "id": "what",
+      "title": "What LastBuy is",
+      "text": "This is Last Buy. It reads the letter, traces the part through everything you build, and tells you what to buy. You give it two things. The letter, and your bill of materials. Behind it, AMD does the reading and writing. Miner U reads the scan. Gemma 4 writes the words. Both run on AMD Instinct, through AMD's Token Factory. Evolus, in our workspace called lychee, rules on the certificates. And the impact engine does the maths. That box is plain code. No model.",
+      "shots": [
+        { "image": "01-landing-hero.png" },
+        { "image": "30-diagram-system.png", "from": "You give it two things" }
+      ],
+      "cues": [
+        { "at": "It reads the letter", "box": [960, 258, 636, 340] },
+        { "at": "two things", "box": [100, 220, 315, 570] },
+        { "at": "AMD does the reading", "box": [1300, 200, 518, 230] },
+        { "at": "Miner U reads", "box": [1328, 320, 214, 88] },
+        { "at": "Gemma 4 writes", "box": [1543, 320, 258, 88] },
+        { "at": "Both run on AMD Instinct", "box": [1300, 200, 518, 230] },
+        { "at": "Evolus in our workspace", "box": [1300, 438, 518, 234] },
+        { "at": "the impact engine", "box": [1300, 677, 518, 233] },
+        { "at": "plain code", "box": [1328, 828, 222, 64] }
+      ]
+    },
+    {
+      "id": "example",
+      "title": "A real example",
+      "text": "Here's a worked example. A notice from Analog Devices comes in. It's in German. Last Buy reads it and finds the part in your bill of materials. Thirty-four days to the last buy. The stock you have runs out in under five weeks. You need to buy five hundred and four thousand units. That's one point four million euros.",
+      "shots": [
+        { "image": "40-worked-01-a-letter-arrives.png" },
+        { "image": "45-notice-the-numbers.png", "from": "It's in German" }
+      ],
+      "cues": [
+        { "at": "Analog Devices", "box": [685, 596, 1115, 82] },
+        { "at": "in German", "box": [108, 266, 1704, 327] },
+        { "at": "finds the part", "box": [120, 632, 420, 84] },
+        { "at": "Thirty-four days", "box": [128, 750, 395, 118] },
+        { "at": "under five weeks", "box": [552, 750, 395, 118] },
+        { "at": "five hundred and four thousand", "box": [974, 750, 395, 118] },
+        { "at": "one point four million", "box": [982, 826, 112, 34] }
+      ]
+    },
+    {
+      "id": "graph",
+      "title": "Why: the graph",
+      "text": "Where does that come from? This graph. It starts at the chip, goes through the two boards it sits on, and up to all five products. On each path it multiplies how many go into one unit. Every line here is arithmetic. You can check it. Ask again tomorrow and you get the same answer.",
+      "shots": [{ "image": "46-notice-what-breaks.png" }],
+      "cues": [
+        { "at": "This graph", "box": [370, 118, 1180, 510] },
+        { "at": "starts at the chip", "box": [388, 342, 135, 62] },
+        { "at": "two boards", "box": [668, 303, 192, 140] },
+        { "at": "all five products", "box": [1228, 185, 115, 375] },
+        { "at": "multiplies", "box": [1246, 280, 92, 118] },
+        { "at": "You can check it", "box": [370, 707, 1180, 94] }
+      ]
+    },
+    {
+      "id": "read",
+      "title": "How the letter is read",
+      "text": "How does it read the letter so fast? A notice is a form. It ticks its own box. It prints the last-buy date next to a label. So we read the form first. If the page says it, we go straight across the top. Twenty-seven seconds. No credits. If the page doesn't say it, Evolus and Gemma fill the gap. About fifty-four seconds. Either way, you get an answer.",
+      "shots": [{ "image": "31-diagram-notice.png" }],
+      "cues": [
+        { "at": "A notice is a form", "box": [670, 165, 288, 235] },
+        { "at": "ticks its own box", "box": [684, 346, 258, 42] },
+        { "at": "If the page says it", "box": [1030, 170, 195, 198] },
+        { "at": "straight across the top", "box": [1210, 165, 320, 235] },
+        { "at": "Twenty-seven seconds", "box": [645, 835, 335, 80] },
+        { "at": "Evolus and Gemma", "box": [730, 538, 562, 238] },
+        { "at": "fifty-four seconds", "box": [988, 835, 290, 80] }
+      ]
+    },
+    {
+      "id": "order",
+      "title": "The order",
+      "text": "The order size depends on two things. How long you keep supplying spares, and how much extra you keep as a buffer. Move them, and the number moves. Then a real person approves it. Nothing gets ordered on its own.",
+      "shots": [{ "image": "47-notice-the-order.png" }],
+      "cues": [
+        { "at": "How long you keep", "box": [230, 565, 1080, 95] },
+        { "at": "as a buffer", "box": [230, 688, 1080, 95] },
+        { "at": "the number moves", "box": [1362, 565, 200, 110] },
+        { "at": "a real person", "box": [216, 880, 1488, 92] }
+      ]
+    },
+    {
+      "id": "vigil",
+      "title": "Vigil",
+      "text": "This is Vigil, the assistant. It sits on every page. Ask it anything, across all your documents at once. Every claim ends with where it came from. The file name, if it read it. Engine, if it worked it out. And if your documents don't say, it tells you that. It doesn't guess.",
+      "shots": [
+        { "image": "14-ask-in-use.png" },
+        { "image": "44-worked-05-ask-with-sources.png", "from": "Every claim ends" }
+      ],
+      "cues": [
+        { "at": "every page", "box": [14, 1006, 128, 60] },
+        { "at": "all your documents", "box": [1240, 582, 356, 148] },
+        { "at": "The file name", "box": [694, 628, 170, 32] },
+        { "at": "Engine if it worked", "box": [1098, 657, 86, 32] }
+      ]
+    },
+    {
+      "id": "memory",
+      "title": "What Vigil remembers",
+      "text": "When a chat gets long, Vigil doesn't just summarise it. It turns it into claims, each with its source. Then it throws the chat away. Start a new chat, and it still knows the claims. A summary can't be checked. A claim with a source can.",
+      "shots": [{ "image": "32-diagram-memory.png" }],
+      "cues": [
+        { "at": "When a chat gets long", "box": [112, 297, 248, 368] },
+        { "at": "into claims", "box": [783, 337, 322, 236] },
+        { "at": "throws the chat away", "box": [150, 665, 240, 320] },
+        { "at": "Start a new chat", "box": [1195, 297, 635, 330] },
+        { "at": "A claim with a source can", "box": [783, 337, 322, 236] }
+      ]
+    },
+    {
+      "id": "close",
+      "title": "Cost, and the close",
+      "text": "A full assessment costs about a hundredth of a cent. So you can read every notice, not only the ones that look important. That's how the expensive ones get missed. Tools in this space today are databases you search. Last Buy reads the letter and tells you what breaks. Built on Gemma 4 on AMD, with Evolus. Made by Hamza Bukhari. Thanks for watching.",
+      "shots": [
+        { "image": "50-landing-cost.png" },
+        { "image": "51-landing-close-dark.png", "from": "Tools in this space", "dark": true },
+        { "image": "endcard", "from": "Built on Gemma 4", "dark": true }
+      ],
+      "cues": [
+        { "at": "a hundredth of a cent", "box": [105, 488, 228, 66] },
+        { "at": "every notice", "box": [1230, 355, 585, 385] },
+        { "at": "databases you search", "box": [105, 340, 780, 190] },
+        { "at": "reads the letter and tells you", "box": [105, 535, 795, 130] }
+      ]
+    }
+  ]
+}
