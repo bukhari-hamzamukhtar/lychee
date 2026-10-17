@@ -171,7 +171,9 @@ The ask/answer path is red #D62D12. The context arrows are thin grey.
 ```
 HOUSE RULES (follow all of them):
 - Use the real, official logos for AMD, Google Gemma, Evolus, Next.js and
-  Vercel wherever they are named. Do not invent look-alike logos.
+  Vercel wherever they are named. Do not invent look-alike logos. The Evolus
+  logo is a bright green rounded blob with two white oval eyes, beside the
+  word "evolus" in bold green lowercase. It is not a letter "e".
 - Every arrow carries a short label of one to four words, written small and
   placed right on or beside its arrow. Never leave an arrow unlabelled.
 - No sentences, no paragraphs, no captions, no descriptive text blocks. Only

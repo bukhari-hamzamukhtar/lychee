@@ -1,211 +1,301 @@
-# Video — narration and the prompt to build it
+# Video: script, frames, and the prompt to build it
 
-Two things in here. The **narration** is what gets said, written to be read out
-loud at a normal speed. The **master prompt** at the bottom is what goes into
-NotebookLM, along with this file and the frames in `screenshots/`.
+Three things in here:
 
-Target: **3 minutes**. Judges watch a lot of these. Short and specific beats
-long and thorough.
+1. **The script.** What gets said, line by line, with the frame on screen and
+   what to highlight while each line is spoken.
+2. **The frames.** All in `submission/screenshots/`, 1920x1080.
+3. **The master prompt** for NotebookLM or Gemini, at the bottom.
 
----
+Length: about **3 minutes**. Ten short parts.
 
-## Narration
-
-Timings are rough. Read it like you are explaining it to a friend who works in
-manufacturing, not like you are presenting to a room.
-
-### 0:00 — 0:20 · the problem
-> **[frame: 11-landing-hero-dark.png]**
-
-A supplier sends you a letter. It says one of your parts is being discontinued,
-and you have thirty-four days to place a final order.
-
-Now someone has to work out what that actually breaks. Which products use this
-part. Which customers you promised spares to. Which certificates have to be
-redone. How many to buy before the door shuts.
-
-That takes days, and it usually pulls in three people. And if you miss the date,
-the part is gone. You redesign the product, or you stop building it.
-
-### 0:20 — 0:40 · what it does
-> **[frames: 01-landing-hero.png, then 02-notices-empty.png]**
-
-This is LastBuy. You drop the letter in, and it tells you what breaks.
-
-It reads the PDF — a scan, a photo, any language. It finds your part numbers. It
-traces each one up through your bill of materials to every finished product that
-contains it. Then it prices the decision: how many to buy, what that costs, and
-what it protects.
-
-### 0:40 — 1:05 · the graph
-> **[frame: 20-landing-full.png — hold on the fan diagram]**
-
-Here is the part that matters. The money is not written by a model.
-
-One isolator sits under five finished products. We walk the bill of materials
-from the part up to each of them, multiplying the quantities along the way. Five
-products. Nine million euros of revenue behind them, every year.
-
-Ask it again tomorrow and you get the same number, because it is arithmetic. The
-models read documents and write the memo. They never make a number you act on.
-
-### 1:05 — 1:25 · how it is put together
-> **[frame: 20-landing-full.png — hold on the two architecture diagrams]**
-
-Here is the whole thing on one picture. You give it two things: the letter, and
-your bill of materials. Everything runs in your browser, and behind that there
-are three services.
-
-AMD reads the document and writes the words. Evolus rules on the certificates.
-And the impact engine — the box on the right — never calls a model at all. That
-is the one that produces the numbers.
-
-The second picture is the decision the whole pipeline turns on. The notice comes
-in, we read the form, and then we ask one question: did the page already say it?
-If yes, we go straight across the top. If not, and only then, the model fills the
-gap.
-
-### 1:25 — 1:50 · a real letter
-> **[frame: 13-notice-impact.png]**
-
-We tested it on a real Hittite Microwave notice
-from 2014. Four hundred and eighty-eight kilobytes, scanned.
-
-Here is the thing we got wrong first. We sent the whole document to the model,
-and the run took a hundred and sixty-one seconds. Vercel kills a request at
-sixty. So it did not just cost more — it failed.
-
-So we looked at the document again. A notice like this is a form. It ticks its
-own category. It prints its last-time-buy date next to a label. So we read the
-form first, and only ask the model for what the page does not say.
-
-Twenty-seven seconds. Five parts matched. Last-time buy, second of February
-twenty-fourteen, read straight off its own label. No credits spent.
-
-And when the page does not say it, the model still runs — that path takes about
-fifty-four seconds. The request is on a clock: whatever the reading took comes
-out of the budget, and if there is not enough left, we drop the optional step
-rather than run past the limit. A hard document gets a worse answer. It does not
-get no answer.
-
-### 1:50 — 2:10 · ask
-> **[frame: 14-ask-in-use.png]**
-
-You can also just ask it things. Drop in as many documents as you want and ask
-across all of them at once.
-
-Every answer tells you where it came from. If it read something in a document,
-the sentence ends with the filename. If the engine computed it, it ends with
-"engine". Those two never get mixed up.
-
-And when the context window fills, we do not summarise the chat. We turn it into
-claims — each one with its subject, how it is known, and which document it came
-from — and then we throw the messages away. A summary cannot be checked. A claim
-can.
-
-### 2:10 — 2:30 · what it runs on
-> **[frames: 03-parts.png, then 09-ask.png — the strip under the nav is on both]**
-
-Everything runs on AMD. Gemma reads the notices and writes the memos, served on
-AMD Instinct through Token Factory. MinerU does the OCR, same place. One file in
-the whole repository talks to a model at all — grep it for OpenAI or Anthropic
-and nothing comes back.
-
-The certification rules come from an Evolus agent, in a workspace called lychee,
-pointed at that same AMD model. It cites the standard and the clause every time,
-and when the documents do not cover something, it says so instead of guessing.
-
-### 2:30 — 2:45 · cost
-> **[frame: 20-landing-full.png — hold on the cost section]**
-
-A complete assessment costs about a hundredth of a cent.
-
-That number matters more than it looks. Most teams triage — they only look at
-the notices that seem important. That is exactly how the expensive ones get
-missed. At this price, you read every single one.
-
-### 2:45 — 3:00 · close
-> **[frame: 21-landing-full-dark.png — hold on the closing line]**
-
-Obsolescence management is already an industry. Every tool in it is a database
-you search — you type in a part number, and it tells you facts about the part.
-
-This one reads the letter and tells you what breaks.
-
-It is live, the code is public, and every figure on screen is one you can check.
+Every number in here comes from the engine running the example factory. They
+match the site, the deck and the screenshots: 3 assemblies, 5 products,
+€9.06M a year, 34 days, 504,798 units, €1,433,626.
 
 ---
 
-## Frames, in order
+## The script
 
-| # | file | what it is |
+Read it like you are explaining it to a friend who works in a factory.
+Short sentences. Let the numbers sit for a second.
+
+---
+
+### 1 · The hook (0:00 – 0:15)
+
+**Frame:** `11-landing-hero-dark.png`
+
+> A supplier sends you a letter.
+> One of your parts is being discontinued.
+> You have thirty-four days to place one last order.
+> After that, it's gone for good.
+
+**Highlight:** the headline, *"before the window shuts"* in red.
+
+---
+
+### 2 · The problem (0:15 – 0:35)
+
+**Frame:** `49-landing-the-problem.png`
+
+> The letter is one line. The hard part is what it breaks.
+>
+> This one chip, ADUM1201ARZ, sits inside three assemblies.
+> Those go into five products.
+> And those five products bring in nine million euros a year.
+>
+> Today, someone works that out by hand, in spreadsheets, before the date.
+
+**Highlight, one at a time, as each number is said:**
+"three assemblies" → the **3** row · "five products" → the **5** row ·
+"nine million euros" → the **€9.06M** row · "before the date" → the red **34 days** row.
+
+---
+
+### 3 · What LastBuy is (0:35 – 1:00)
+
+**Frames:** `01-landing-hero.png` for the first line, then `30-diagram-system.png`
+
+> This is LastBuy. It reads the letter, traces the part through everything you
+> build, and tells you what to buy.
+>
+> You give it two things. The letter, and your bill of materials.
+>
+> Behind it, AMD does the reading and writing. MinerU reads the scan. Gemma 4
+> writes the words. Both run on AMD Instinct, through AMD's Token Factory.
+>
+> Evolus, in our workspace called lychee, rules on the certificates.
+>
+> And the impact engine does the maths. That box is plain code. No model.
+
+**Highlight:**
+"two things" → the **Supplier notice** and **Bill of materials** cards on the left ·
+"AMD" → the **AMD Instinct** card, with **MinerU2.5-Pro** and **Google Gemma** inside it ·
+"Evolus" → the green **evolus** logo and **workspace: lychee** ·
+"plain code" → the **Impact engine** card and its **Deterministic** chip ·
+then the red return arrow, **what breaks + what it costs**.
+
+---
+
+### 4 · A real example arrives (1:00 – 1:20)
+
+**Frames:** `40-worked-01-a-letter-arrives.png`, then `45-notice-the-numbers.png`
+
+> Here's a worked example. A notice from Analog Devices comes in. It's in German.
+>
+> LastBuy reads it and finds the part in your bill of materials.
+>
+> Thirty-four days to the last buy. The stock you have runs out in under five
+> weeks. You need to buy five hundred and four thousand units. That's one point
+> four million euros.
+
+**Highlight:**
+"Analog Devices" → the top row, **PCN-ADI-2026-4471**, and its red **34d to last buy** ·
+"in German" → the **As it arrived** box with the German text ·
+"thirty-four days" → **34d** · "under five weeks" → **4.7 wk** ·
+"five hundred and four thousand" → **504,798** · "one point four million" → **€1,433,626**.
+
+---
+
+### 5 · Why: the graph (1:20 – 1:40)
+
+**Frame:** `46-notice-what-breaks.png`
+
+> Where does that come from? This graph.
+>
+> It starts at the chip, goes through the two boards it sits on, and up to all
+> five products. On each path it multiplies how many go into one unit.
+>
+> Every line here is arithmetic. You can check it. Ask again tomorrow and you get
+> the same answer.
+
+**Highlight:**
+"the chip" → the red **ADUM1201ARZ** node on the left ·
+"the two boards" → **ASM-CTRL-B** and **ASM-GATE-D** ·
+"all five products" → the five nodes on the right, **HMI-7** to **SRV-100** ·
+"multiplies" → the **7 per unit** and **13 per unit** labels ·
+"you can check it" → the path rows underneath, like **ADUM1201ARZ → ASM-GATE-D → ASM-PWR-A → MD-3000**.
+
+---
+
+### 6 · How the letter is read (1:40 – 2:00)
+
+**Frame:** `31-diagram-notice.png`
+
+> How does it read the letter so fast? A notice is a form.
+> It ticks its own box. It prints the last-buy date next to a label.
+>
+> So we read the form first. If the page says it, we go straight across the top.
+> Twenty-seven seconds. No credits.
+>
+> If the page doesn't say it, Evolus and Gemma fill the gap. About fifty-four
+> seconds. Either way, you get an answer.
+
+**Highlight:**
+"a form" → **Read the form** and its three tags, **ticked box · date · part numbers** ·
+"if the page says it" → the **Did the page say it?** diamond ·
+"straight across the top" → the red **yes** arrow to **Match bill of materials** ·
+"twenty-seven seconds" → the red pill, **yes: 27s, 0 credits, $0** ·
+"Evolus and Gemma" → the two cards on the lower row ·
+"fifty-four seconds" → the grey pill, **no: 54s, 10.6 credits**.
+
+---
+
+### 7 · The order, and who signs it (2:00 – 2:15)
+
+**Frame:** `47-notice-the-order.png`
+
+> The order size depends on two things. How long you keep supplying spares,
+> and how much extra you keep as a buffer. Move them, and the number moves.
+>
+> Then a real person approves it. Nothing gets ordered on its own.
+
+**Highlight:**
+"how long" → the **Service commitment** slider, **3 years** ·
+"buffer" → the **Spares buffer** slider, **10%** ·
+"the number moves" → the **ORDER 504,798** figure on the right ·
+"a real person" → the **Run the agent / Assess notice** row at the bottom.
+
+---
+
+### 8 · Vigil (2:15 – 2:35)
+
+**Frames:** `44-worked-05-ask-with-sources.png`, then `14-ask-in-use.png`
+
+> This is Vigil, the assistant. It sits on every page.
+>
+> Ask it anything, across all your documents at once.
+> Every claim ends with where it came from. The file name, if it read it.
+> "Engine", if it worked it out.
+>
+> And if your documents don't say, it tells you that. It doesn't guess.
+
+**Highlight:**
+"every page" → the **Ask Vigil** button, bottom left of `14-ask-in-use.png` ·
+"the file name" → **[PCN140002.pdf]** at the end of a sentence ·
+"engine" → **[engine]** at the end of the last sentence ·
+then, on the second frame, the **Documents** list on the right.
+
+---
+
+### 9 · What Vigil remembers (2:35 – 2:48)
+
+**Frame:** `32-diagram-memory.png`
+
+> When a chat gets long, Vigil doesn't just summarise it.
+> It turns it into claims, each with its source. Then it throws the chat away.
+>
+> Start a new chat, and it still knows the claims.
+> A summary can't be checked. A claim with a source can.
+
+**Highlight:**
+"when a chat gets long" → **Conversation, 12 messages** ·
+"claims, each with its source" → the three cards, each with **PDF** or **engine** ·
+"throws the chat away" → the bin, **thrown away** ·
+"a new chat" → **Fork**, then **New conversation** with the claims pinned beside it.
+
+---
+
+### 10 · Cost, and the close (2:48 – 3:05)
+
+**Frames:** `50-landing-cost.png`, then `51-landing-close-dark.png`
+
+> A full assessment costs about a hundredth of a cent.
+> So you can read every notice, not only the ones that look important.
+> That's how the expensive ones get missed.
+>
+> Tools in this space today are databases you search.
+> LastBuy reads the letter and tells you what breaks.
+>
+> Built on Gemma 4 on AMD, with Evolus. I'm Hamza. Thanks for watching.
+
+**Highlight:**
+"a hundredth of a cent" → the red **$0.00012** ·
+"every notice" → the four notices on the right, under **On watch** ·
+on the dark frame, "reads the letter and tells you what breaks" → the red line,
+**This one reads the letter and tells you what breaks.**
+
+---
+
+## Frames, in the order they are used
+
+| part | file | what it shows |
 |---|---|---|
-| 1 | `11-landing-hero-dark.png` | opening, dark |
-| 2 | `01-landing-hero.png` | the product, light |
-| 3 | `02-notices-empty.png` | the dropzone |
-| 4 | `20-landing-full.png` | full page — the fan diagram, the two architecture diagrams, the cost section |
-| 5 | `13-notice-impact.png` | one notice, assessed |
-| 6 | `14-ask-in-use.png` | Ask, with a cited answer |
-| 7 | `03-parts.png` | risk scored before any notice arrives |
-| 8 | `09-ask.png` | the partner strip under the nav |
-| 9 | `08-bill-of-materials.png` | bring your own BOM |
-| 10 | `21-landing-full-dark.png` | closing, dark |
+| 1 | `11-landing-hero-dark.png` | the opening, dark |
+| 2 | `49-landing-the-problem.png` | one part, traced: 3 / 5 / €9.06M / 34 days |
+| 3 | `01-landing-hero.png` | the landing page, light, with the system diagram |
+| 3 | `30-diagram-system.png` | **system architecture**, with the AMD, Gemma and Evolus logos |
+| 4 | `40-worked-01-a-letter-arrives.png` | worked example: three notices arrive |
+| 4 | `45-notice-the-numbers.png` | the German notice, and 34d / 4.7 wk / 504,798 / €9,058,546 |
+| 5 | `46-notice-what-breaks.png` | the graph from the chip to all five products |
+| 6 | `31-diagram-notice.png` | **what happens to a notice**: the yes path and the no path |
+| 7 | `47-notice-the-order.png` | the two assumptions, and the order they make |
+| 8 | `44-worked-05-ask-with-sources.png` | a Vigil answer with its sources |
+| 8 | `14-ask-in-use.png` | the Ask screen, in use |
+| 9 | `32-diagram-memory.png` | **what Vigil remembers** |
+| 10 | `50-landing-cost.png` | the cost, and Vigil on watch |
+| 10 | `51-landing-close-dark.png` | the closing line, dark |
 
-Also in `screenshots/`: products, suppliers, certifications, approvals, sign-in,
-and full-page captures of parts, products, certifications, Ask and the importer.
-Use them if a section needs more to look at.
+**Spare frames,** if a part needs more to look at:
+`41-worked-02-what-it-breaks.png` (the numbers as a list),
+`42-worked-03-parts-ranked.png` (every part scored before any letter comes),
+`43-worked-04-products-at-risk.png` (revenue per product),
+`03-parts.png`, `04-products.png`, `06-certifications.png`, `07-approvals.png`,
+`08-bill-of-materials.png` (bring your own BOM), `10-sign-in.png`,
+and the full-page captures `20` to `27`.
+
+To make them again: `bash scripts/shoot.sh submission/screenshots`, then
+`python scripts/frames.py`.
 
 ---
 
-## Master prompt for NotebookLM
+## Master prompt for NotebookLM or Gemini
 
-Paste this, attach `VIDEO-SCRIPT.md`, and attach the frames from
-`submission/screenshots/`.
+Attach this file and every frame listed above, then paste:
 
 > Make a three-minute product video for **LastBuy**, a tool for manufacturers.
 >
-> **Use the narration in VIDEO-SCRIPT.md as the script, close to word for word.**
-> Do not rewrite it into marketing language. It is deliberately plain and spoken,
-> and that is the point. If you need to trim for timing, cut whole sentences
-> rather than rephrasing the ones you keep.
+> **Script.** Use the script in VIDEO-SCRIPT.md, close to word for word. It is
+> written in plain, spoken English on purpose. Don't turn it into marketing
+> language. If you need to cut for time, drop whole sentences. Don't rephrase the
+> ones you keep. Keep every number exactly as written.
 >
-> **Voice:** one narrator. Calm and straightforward, a person explaining their
-> own work. Not an advertisement. No hype, no rising excitement at the end,
-> slightly dry. Where a number appears, say it plainly and let it sit.
+> **Voice.** One calm narrator, explaining their own work to a friend. Not an
+> advert. No hype, and no big build-up at the end. When a number comes, say it
+> plainly and give it a second.
 >
-> **Pictures:** use the attached screenshots in the order the script marks them.
-> They are real captures of the running product at 1920x1080 — show them full
-> frame and let them hold. A slow pan down the tall full-page captures
-> (`20-landing-full`, `21-landing-full-dark`) is good. Everything else should be
-> static or very nearly. No zoom bounces, no sliding transitions, no stock
-> footage, no generic "AI" or "technology" imagery, and no music that builds.
+> **Pictures.** Use the attached frames, in the order the script gives for each
+> part. They are real screens from the running product. Show each one full frame.
+> No stock footage, no generic "AI" or "tech" imagery, no presenter on screen.
 >
-> **Look:** the product is black on white with one red accent, and dark grey with
-> one orange accent. Match that. Open and close on the dark frames and keep the
-> middle light. Any text you put on screen should be plain sans-serif, small, and
-> in a corner — the screenshots are the content, not a backdrop for captions.
+> **Highlight what is being said. This is the most important instruction.**
+> Under every part of the script there is a **Highlight** line. It says which
+> words in the narration point at which thing on the frame. While those words are
+> spoken, put the viewer's eye on that exact thing: a soft rectangle around it,
+> or dim everything else, or a slow push-in on that area. Then let it go when the
+> sentence ends.
 >
-> **Highlight what is being said.** This is the important one. When the narration
-> names something that is visible on screen, draw attention to that exact part of
-> the image while the line is being read — a soft rectangle around it, a dimming
-> of everything else, or a slow push in on that region. Some examples:
+> - One highlight at a time. Never two or three lit together.
+> - Only highlight what the narrator is talking about right now.
+> - Follow the order in the Highlight line. It matches the order of the words.
+> - On the three diagrams (`30`, `31`, `32`), walk the highlight along the arrows
+>   as the narration follows them, from left to right.
 >
-> - "sign in" or "an account" → the sign-in panel
-> - "drop the letter in" → the dropzone
-> - "five products" → the five product boxes at the right of the fan diagram
-> - "twenty-seven seconds" → the timing row in the pipeline diagram
-> - "the impact engine never calls a model" → that box in the architecture diagram
-> - "ends with the filename" → the bracketed source at the end of Vigil's answer
-> - "a hundredth of a cent" → the cost figure
+> **Partners must be easy to see.** Whenever the narration says AMD, Gemma or
+> Evolus, the highlight goes on that logo. On `30-diagram-system.png` that is the
+> AMD Instinct card, the Google Gemma chip inside it, and the green evolus logo
+> with "workspace: lychee". Say "lychee" clearly; it is the name of the Evolus
+> workspace and the judges look for it.
 >
-> One highlight at a time, appearing as the words are said and fading when the
-> sentence ends. Never highlight something the narrator is not talking about, and
-> never leave three boxes lit at once — the point is to put the viewer's eye in
-> the right place, not to decorate the frame.
+> **Look.** The product is black on white with one red accent, and the dark
+> frames are near-black with an orange-red accent. Open on the dark frame, keep
+> the middle light, end on the dark frame. Any text you add should be small, plain
+> sans-serif, in a corner. No captions that repeat the narration word for word.
 >
-> **Pacing:** about twenty to twenty-five seconds a section, nine sections. Leave
-> a breath between sections rather than cutting straight through.
+> **Pacing.** Ten parts, about fifteen to twenty-five seconds each, with a short
+> breath between parts. Calm cuts or quick fades between frames. No sliding
+> transitions, no zoom bounces, no music that builds.
 >
-> **Do not:** add a logo animation, add a call-to-action card at the end, add
-> captions that restate the narration word for word, speed up or time-lapse the
-> screenshots, or put a presenter on screen.
+> **Don't** add a logo animation, an end card with a call to action, or any
+> number that isn't in the script.
