@@ -52,26 +52,6 @@ body {
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
-/*
- * Connectors in the architecture diagrams.
- *
- * The dashes march along the path, so a line reads as something in transit
- * rather than a static relationship. Only the paths a notice actually travels
- * get this; everything else stays still, which is what makes it mean anything.
- */
-.diagram-flow {
-  animation: diagram-march 1.9s linear infinite;
-}
-
-@keyframes diagram-march {
-  to { stroke-dashoffset: -18; }
-}
-
-/* Someone who has asked for less motion gets a plain dashed line. */
-@media (prefers-reduced-motion: reduce) {
-  .diagram-flow { animation: none; }
-}
-
 /* Scroll-triggered reveals, released by an IntersectionObserver. */
 .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1), transform 0.75s cubic-bezier(0.16,1,0.3,1); }
 .reveal.is-in { opacity: 1; transform: none; }

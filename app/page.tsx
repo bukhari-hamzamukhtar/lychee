@@ -58,16 +58,14 @@ const STEPS = [
 import { Tour } from "@/components/Tour";
 import { VigilWatch } from "@/components/VigilWatch";
 import { TwoAnswers } from "@/components/TwoAnswers";
-import { SystemMap } from "@/components/diagrams/SystemMap";
-import { NoticeFlow } from "@/components/diagrams/NoticeFlow";
-import { ContextGraphDiagram } from "@/components/diagrams/ContextGraph";
+import { Diagram } from "@/components/Diagram";
 
 export default function Landing() {
   return (
     <div>
       {/* ------------------------------------------------ hero */}
       <section className="relative overflow-hidden border-b border-line">
-        <div className="mx-auto grid max-w-[1320px] items-start gap-16 px-8 pb-28 pt-24 sm:pt-32 lg:grid-cols-[minmax(0,1fr)_minmax(0,500px)]">
+        <div className="mx-auto grid max-w-[1320px] items-start gap-14 px-8 pb-28 pt-24 sm:pt-32 lg:grid-cols-[minmax(0,1fr)_minmax(0,620px)]">
           <div>
           <Reveal>
             <Eyebrow>Component obsolescence management</Eyebrow>
@@ -97,7 +95,12 @@ export default function Landing() {
           </Reveal>
           </div>
           <Reveal delay={2}>
-            <SystemMap />
+            <Diagram
+              src="/diagrams/01-system.webp"
+              width={1652}
+              height={810}
+              alt="System architecture. You supply a supplier notice and a bill of materials. LastBuy, with its assistant Vigil, sends the notice to AMD Instinct, where MinerU2.5-Pro reads it and Gemma-4-31B-IT writes; to the Evolus agent in workspace lychee, which rules on certificates; and to the deterministic impact engine, which traces the part and returns what breaks and what it costs."
+            />
           </Reveal>
         </div>
 
@@ -250,11 +253,13 @@ export default function Landing() {
           </Reveal>
 
           <Reveal delay={1}>
-            <div className="mt-14 overflow-x-auto pb-2">
-              <div className="min-w-[860px]">
-                <NoticeFlow />
-              </div>
-            </div>
+            <Diagram
+              className="mt-14"
+              src="/diagrams/02-notice.webp"
+              width={1660}
+              height={748}
+              alt="What happens to a notice. The letter is scanned by MinerU2.5-Pro on AMD in 27 seconds, then the form is read: the ticked box, the date and the part numbers. If the page said it, the parts go straight to the bill of materials and the impact, in 27 seconds for no credits. If not, Evolus doc-structure (10 seconds) and Gemma (17 seconds) fill the gap first, in about 54 seconds and 10.6 credits."
+            />
           </Reveal>
 
           <Reveal delay={2}>
@@ -263,11 +268,13 @@ export default function Landing() {
               <h3 className="mt-5 max-w-[26ch] text-[clamp(1.3rem,2.2vw,1.75rem)] font-normal leading-[1.2] tracking-[-0.02em]">
                 A conversation is thrown away. What it established is not.
               </h3>
-              <div className="mt-11 overflow-x-auto pb-2">
-                <div className="min-w-[820px]">
-                  <ContextGraphDiagram />
-                </div>
-              </div>
+              <Diagram
+                className="mt-11"
+                src="/diagrams/03-memory.webp"
+                width={1672}
+                height={883}
+                alt="What Vigil remembers. When the window fills, a twelve-message conversation is distilled into claims, each with its source: plating change from the PDF, last buy 2014-02-01 from the PDF, under the RF front end from the engine. The conversation itself is thrown away. A fork carries the claims into a new conversation with an empty window."
+              />
             </div>
           </Reveal>
         </div>
