@@ -38,7 +38,7 @@ RIGHT COLUMN — heading "Behind it", three stacked cards:
      "Gemma-4-31B-IT".
   2. The official Evolus logo, with "workspace: lychee". Three small chips:
      "Agent", "AI Tools", "Knowledge library".
-  3. A gear-and-graph icon, "Impact engine". One chip: "no AI model".
+  3. A gear-and-graph icon, "Impact engine". One chip: "Deterministic".
 
 Arrows (each one must carry its label, written small, right on the arrow):
   • Supplier notice → LastBuy : "upload"
