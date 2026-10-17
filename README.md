@@ -63,18 +63,41 @@ and only when something is genuinely missing — no date, no ticked category and
 to go on, or no part number in a recognisable form — does the request go on to Evolus
 `doc-structure` and an AMD-hosted model.
 
-On a real 488 KB scanned PCN the difference is 161 seconds against 27:
+On a real 488 KB scanned PCN, where the form does state everything:
 
-| | model always | readers first |
+| | every document | readers first |
 |---|---|---|
-| OCR | 42s | 27s |
-| Evolus extraction | 17s | skipped |
-| model normalisation | 103s | skipped |
-| **total** | **161s** | **27s** |
-| cost | 10.4 credits + $0.00026 | nothing |
+| OCR on AMD | 27s | 27s |
+| Evolus extraction | 10s | skipped |
+| Gemma normalisation | 17s | skipped |
+| **total** | **54s** | **27s** |
+| cost | 10.6 credits + $0.000066 | nothing |
 
-Vercel stops a function at 60 seconds, so the first column did not merely cost money, it
-failed outright.
+### When the page does not say it
+
+The model path still runs, and still finishes — roughly 54 seconds on a document that
+size. It is not a failure mode, it is the slower answer.
+
+It is, however, on a clock. `maxDuration` is 60 seconds and the platform does not warn
+before it cuts, so whatever the OCR took comes out of the budget. Evolus `doc-structure`
+is genuinely useful but not load-bearing — the model gets the full notice text either
+way — so it is the thing that gets dropped when reading has already spent too much, and
+the stream says so:
+
+```
+amd     read the document
+local   read the form        found 1 part without a model
+local   skip the extractor   reading took 4s; going straight to the model to stay inside the limit
+amd     normalise the notice
+local   match against the bill of materials   1 of our 1 parts named
+```
+
+A hard document gets a worse answer rather than no answer. `INGEST_BUDGET_MS` and
+`INGEST_MODEL_RESERVE_MS` override the thresholds, which is how that branch is tested
+without needing a document slow enough to trigger it naturally.
+
+An earlier version of this sent every document to the model and took **161 seconds** —
+over the limit, and it failed outright. That is what the ordering fixed.
 
 The part numbers are matched against the real bill of materials last. A document naming
 no component you build is **rejected**, not assessed, because an impact report for a part

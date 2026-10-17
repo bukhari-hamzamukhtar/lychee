@@ -88,10 +88,10 @@ export function NoticeFlow() {
   return (
     <figure className="w-full">
       <svg
-        viewBox="0 0 980 340"
+        viewBox="0 0 980 356"
         className="h-auto w-full text-fg"
         role="img"
-        aria-label="A notice is read by MinerU on AMD, then by deterministic readers. If the form states its category, its last-time-buy date and its part numbers, the pipeline goes straight to matching against the bill of materials in twenty-seven seconds for no credits. If anything is missing, it goes through Evolus extraction and Gemma normalisation first, which is slower."
+        aria-label="A notice is read by MinerU on AMD, then by deterministic readers. If the form states its category, its last-time-buy date and its part numbers, the pipeline goes straight to matching against the bill of materials in twenty-seven seconds for no credits. If anything is missing, it goes through Evolus extraction and Gemma normalisation first, taking about fifty-four seconds in total, and the extractor is skipped if reading the document already used too much of the sixty second limit."
       >
         <defs>
           <marker id="flowArrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -141,9 +141,19 @@ export function NoticeFlow() {
 
         {/* no — the long way round */}
         <Arrow d="M566 150 L566 212 L628 212" label="no" at={{ x: 556, y: 186, anchor: "end" }} quiet />
-        <Step x={628} y={192} w={150} title="Evolus doc-structure" meta="extract the fields · 17s" tone="quiet" />
+        <Step
+          x={628}
+          y={192}
+          w={150}
+          title="Evolus doc-structure"
+          meta="extract the fields · 10s"
+          tone="quiet"
+        />
         <Arrow d="M778 212 L812 212" quiet />
-        <Step x={812} y={192} w={150} title="Gemma normalise" meta="fill the gap · up to 103s" tone="quiet" />
+        <Step x={812} y={192} w={150} title="Gemma normalise" meta="fill the gap · 17s" tone="quiet" />
+        <text x={628} y={246} className="fill-current text-[9.5px]" opacity={0.5}>
+          the extractor is dropped if reading already took too long
+        </text>
         <Arrow d="M962 192 L962 166 L780 166 L780 150" quiet />
 
         {/* ---------- what each route costs ---------- */}
@@ -153,24 +163,29 @@ export function NoticeFlow() {
           <text x={0} y={290} className="fill-current text-[11px]" style={{ fontWeight: 500 }}>
             Form says it
           </text>
-          <text x={110} y={290} className="fill-current text-[11px]">
+          <text x={118} y={290} className="fill-current text-[11px]">
             27s · 0 Evolus credits · $0.00 of inference
           </text>
         </g>
-        <g opacity={0.6}>
+        <g opacity={0.65}>
           <text x={0} y={312} className="fill-current text-[11px]" style={{ fontWeight: 500 }}>
             Model needed
           </text>
-          <text x={110} y={312} className="fill-current text-[11px]">
-            up to 161s · over the 60s request limit · fails
+          <text x={118} y={312} className="fill-current text-[11px]">
+            about 54s · 10.6 credits · $0.000066 — inside the 60s limit, and the
+          </text>
+          <text x={118} y={328} className="fill-current text-[11px]">
+            extractor is skipped rather than overrun it
           </text>
         </g>
       </svg>
 
-      <figcaption className="mt-4 max-w-[76ch] text-[12.5px] leading-relaxed text-dim">
+      <figcaption className="mt-4 max-w-[80ch] text-[12.5px] leading-relaxed text-dim">
         A supplier notice is a form. It ticks its own category and prints its last-time-buy
-        date beside a label. When the page says all of that, the lower route never runs —
-        which is the difference between twenty-seven seconds and a request that times out.
+        date beside a label. When the page says all of that, the lower route never runs.
+        When it does run, the request is on a clock: whatever time reading the document
+        already took comes out of the budget, and the optional extractor is dropped before
+        the limit is, so a hard document gets a worse answer rather than no answer.
       </figcaption>
     </figure>
   );

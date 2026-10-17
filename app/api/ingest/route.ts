@@ -35,6 +35,23 @@ const MAX_BYTES = 8 * 1024 * 1024;
 /** Nothing has been heard from the stream for this long; say we are still here. */
 const HEARTBEAT_MS = 8000;
 
+/**
+ * How long the whole request may take, and what the optional stage needs.
+ *
+ * maxDuration is 60s and the platform does not warn before it cuts; a request
+ * killed mid-stream looks to the browser exactly like a dead connection. OCR on
+ * a large scan takes most of a minute on its own, so the budget has to be spent
+ * deliberately rather than hoped through.
+ *
+ * Evolus doc-structure is genuinely useful — it hands the model clean fields to
+ * work from — but it is not load-bearing: the model gets the full notice text
+ * either way. So it is the thing that gets dropped when OCR has already eaten
+ * the budget, and the stream says that is what happened.
+ */
+const TOTAL_BUDGET_MS = Number(process.env.INGEST_BUDGET_MS ?? 55_000);
+const MODEL_RESERVE_MS = Number(process.env.INGEST_MODEL_RESERVE_MS ?? 22_000);
+const EVOLUS_ESTIMATE_MS = 12_000;
+
 interface Stage {
   name: string;
   provider: "amd" | "evolus" | "local";
@@ -90,6 +107,7 @@ export async function POST(req: Request) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      const startedAt = Date.now();
       const stages: Stage[] = [];
       let closed = false;
 
@@ -185,18 +203,32 @@ export async function POST(req: Request) {
           if (guessedType) missing.push("the kind of notice");
           if (!partIds.length) missing.push("part numbers in a form we recognise");
 
-          const extracted = await timed(
-            "extract fields",
-            "evolus",
-            () =>
-              runTool("doc-structure", text.slice(0, 12000), { format: "json", content: "data" }),
-            (r) => ({ credits: r.creditsConsumed, note: `looking for ${missing.join(", ")}` }),
-          ).catch(() => ({
-            output: "",
-            creditsConsumed: 0,
-            tool: "doc-structure",
-            truncated: false,
-          }));
+          // Spend the optional step only if there is room left for the one that
+          // matters. A long OCR means this document gets the model and nothing
+          // else, which is a worse answer than it could have been but an answer.
+          const spent = Date.now() - startedAt;
+          const roomForEvolus =
+            spent + EVOLUS_ESTIMATE_MS + MODEL_RESERVE_MS < TOTAL_BUDGET_MS;
+
+          const extracted = roomForEvolus
+            ? await timed(
+                "extract fields",
+                "evolus",
+                () =>
+                  runTool("doc-structure", text.slice(0, 12000), { format: "json", content: "data" }),
+                (r) => ({ credits: r.creditsConsumed, note: `looking for ${missing.join(", ")}` }),
+              ).catch(() => ({
+                output: "",
+                creditsConsumed: 0,
+                tool: "doc-structure",
+                truncated: false,
+              }))
+            : (note(
+                "skip the extractor",
+                0,
+                `reading took ${Math.round(spent / 1000)}s; going straight to the model to stay inside the limit`,
+              ),
+              { output: "", creditsConsumed: 0, tool: "doc-structure", truncated: false });
 
           const normalised = await timed(
             "normalise the notice",

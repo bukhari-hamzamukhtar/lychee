@@ -252,12 +252,12 @@ function figure(s, theme, { x, y, w, value, label, accent = false, size = 40 }) 
   );
 
   const compare = [
-    ["", "model always", "form first"],
-    ["OCR on AMD", "42s", "27s"],
-    ["Evolus extraction", "17s", "skipped"],
-    ["Model normalisation", "103s", "skipped"],
-    ["Total", "161s", "27s"],
-    ["Cost", "10.4 credits", "nothing"],
+    ["", "every document", "form first"],
+    ["OCR on AMD", "27s", "27s"],
+    ["Evolus extraction", "10s", "skipped"],
+    ["Gemma normalisation", "17s", "skipped"],
+    ["Total", "54s", "27s"],
+    ["Cost", "10.6 credits", "nothing"],
   ];
   let y = 3.1;
   for (const [k, a, b] of compare) {
@@ -276,9 +276,12 @@ function figure(s, theme, { x, y, w, value, label, accent = false, size = 40 }) 
     y += head ? 0.42 : 0.5;
   }
 
-  s.addText("Vercel kills a request at 60 seconds. The left column does not just cost more - it fails.", {
-    x: M, y: 6.2, w: 6.3, h: 0.5, fontFace: SANS, fontSize: 12, color: LIGHT.mid, lineSpacingMultiple: 1.3,
-  });
+  s.addText(
+    "Vercel kills a request at 60 seconds, so the request runs on a clock: whatever " +
+      "reading took comes out of the budget, and the optional extractor is dropped " +
+      "before the limit is.",
+    { x: M, y: 6.15, w: 6.3, h: 0.7, fontFace: SANS, fontSize: 11.5, color: LIGHT.mid, lineSpacingMultiple: 1.3 },
+  );
 
   s.addImage({ path: shot("02-notices-empty.png"), x: 7.5, y: 1.9, w: 5.0, h: 2.81 });
   s.addText("Five parts matched. Last-time buy 2014-02-01, read off its own label.", {

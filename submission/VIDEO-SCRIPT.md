@@ -82,6 +82,12 @@ form first, and only ask the model for what the page does not say.
 Twenty-seven seconds. Five parts matched. Last-time buy, second of February
 twenty-fourteen, read straight off its own label. No credits spent.
 
+And when the page does not say it, the model still runs — that path takes about
+fifty-four seconds. The request is on a clock: whatever the reading took comes
+out of the budget, and if there is not enough left, we drop the optional step
+rather than run past the limit. A hard document gets a worse answer. It does not
+get no answer.
+
 ### 1:50 — 2:10 · ask
 > **[frame: 14-ask-in-use.png]**
 
