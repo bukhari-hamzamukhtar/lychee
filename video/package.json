@@ -3,8 +3,9 @@
   "private": true,
   "description": "The LastBuy demo video, rendered with Remotion. Separate from the app on purpose.",
   "scripts": {
+    "narrate": "python narrate.py",
     "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts LastBuy ../submission/LastBuy-demo.mp4"
+    "render": "remotion render src/index.ts LastBuy ../submission/LastBuy-demo.mp4 --browser-executable=\"C:/Program Files/Google/Chrome/Application/chrome.exe\" --chrome-mode=chrome-for-testing"
   },
   "dependencies": {
     "@remotion/cli": "4.0.536",

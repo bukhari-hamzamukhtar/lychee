@@ -1,13 +1,16 @@
 # Video: script, frames, and the prompt to build it
 
-Three things in here:
+Things in here:
 
 1. **The script.** What gets said, line by line, with the frame on screen and
    what to highlight while each line is spoken.
 2. **The frames.** All in `submission/screenshots/`, 1920x1080.
-3. **The master prompt** for NotebookLM or Gemini, at the bottom.
 
 Length: about **3 minutes**. Ten short parts.
+
+The rendered video is `submission/LastBuy-demo.mp4`, with subtitles in
+`LastBuy-demo.srt`. It is built from this script by `video/`: `python
+narrate.py` makes the voice and the timings, `npm run render` makes the video.
 
 Every number in here comes from the engine running the example factory. They
 match the site, the deck and the screenshots: 3 assemblies, 5 products,
@@ -208,7 +211,7 @@ then, on the second frame, the **Documents** list on the right.
 > Tools in this space today are databases you search.
 > LastBuy reads the letter and tells you what breaks.
 >
-> Built on Gemma 4 on AMD, with Evolus. I'm Hamza. Thanks for watching.
+> Built on Gemma 4 on AMD, with Evolus. Made by Hamza Bukhari. Thanks for watching.
 
 **Highlight:**
 "a hundredth of a cent" → the red **$0.00012** ·
@@ -245,57 +248,3 @@ on the dark frame, "reads the letter and tells you what breaks" → the red line
 `08-bill-of-materials.png` (bring your own BOM), `10-sign-in.png`,
 and the full-page captures `20` to `27`.
 
-To make them again: `bash scripts/shoot.sh submission/screenshots`, then
-`python scripts/frames.py`.
-
----
-
-## Master prompt for NotebookLM or Gemini
-
-Attach this file and every frame listed above, then paste:
-
-> Make a three-minute product video for **LastBuy**, a tool for manufacturers.
->
-> **Script.** Use the script in VIDEO-SCRIPT.md, close to word for word. It is
-> written in plain, spoken English on purpose. Don't turn it into marketing
-> language. If you need to cut for time, drop whole sentences. Don't rephrase the
-> ones you keep. Keep every number exactly as written.
->
-> **Voice.** One calm narrator, explaining their own work to a friend. Not an
-> advert. No hype, and no big build-up at the end. When a number comes, say it
-> plainly and give it a second.
->
-> **Pictures.** Use the attached frames, in the order the script gives for each
-> part. They are real screens from the running product. Show each one full frame.
-> No stock footage, no generic "AI" or "tech" imagery, no presenter on screen.
->
-> **Highlight what is being said. This is the most important instruction.**
-> Under every part of the script there is a **Highlight** line. It says which
-> words in the narration point at which thing on the frame. While those words are
-> spoken, put the viewer's eye on that exact thing: a soft rectangle around it,
-> or dim everything else, or a slow push-in on that area. Then let it go when the
-> sentence ends.
->
-> - One highlight at a time. Never two or three lit together.
-> - Only highlight what the narrator is talking about right now.
-> - Follow the order in the Highlight line. It matches the order of the words.
-> - On the three diagrams (`30`, `31`, `32`), walk the highlight along the arrows
->   as the narration follows them, from left to right.
->
-> **Partners must be easy to see.** Whenever the narration says AMD, Gemma or
-> Evolus, the highlight goes on that logo. On `30-diagram-system.png` that is the
-> AMD Instinct card, the Google Gemma chip inside it, and the green evolus logo
-> with "workspace: lychee". Say "lychee" clearly; it is the name of the Evolus
-> workspace and the judges look for it.
->
-> **Look.** The product is black on white with one red accent, and the dark
-> frames are near-black with an orange-red accent. Open on the dark frame, keep
-> the middle light, end on the dark frame. Any text you add should be small, plain
-> sans-serif, in a corner. No captions that repeat the narration word for word.
->
-> **Pacing.** Ten parts, about fifteen to twenty-five seconds each, with a short
-> breath between parts. Calm cuts or quick fades between frames. No sliding
-> transitions, no zoom bounces, no music that builds.
->
-> **Don't** add a logo animation, an end card with a call to action, or any
-> number that isn't in the script.
