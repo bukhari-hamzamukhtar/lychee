@@ -186,7 +186,9 @@ export const LastBuyVideo: React.FC = () => {
       })}
       {timeline.parts.map((p) => (
         <Sequence key={p.id} from={Math.round(p.start * fps)}>
-          <Audio src={staticFile(p.audio)} />
+          {/* The voice comes in at about -23 dBFS with its peaks near -4.5; this
+              lifts it about 3.5 dB for laptop speakers and stays clear of clipping. */}
+          <Audio src={staticFile(p.audio)} volume={1.5} />
         </Sequence>
       ))}
       <AbsoluteFill style={{ background: "#000", opacity: tail, pointerEvents: "none" }} />

@@ -21,6 +21,7 @@ import asyncio
 import json
 import re
 import shutil
+import textwrap
 from pathlib import Path
 
 import edge_tts
@@ -206,7 +207,9 @@ async def main():
 
     srt = []
     for i, (a, b, text) in enumerate(subs, 1):
-        srt.append(f"{i}\n{srt_time(a)} --> {srt_time(b + 0.25)}\n{text}\n")
+        # a long line goes on two rows rather than running off a phone screen
+        rows = "\n".join(textwrap.wrap(text, width=len(text) // 2 + 4)) if len(text) > 44 else text
+        srt.append(f"{i}\n{srt_time(a)} --> {srt_time(b + 0.25)}\n{rows}\n")
     (ROOT / "submission" / "LastBuy-demo.srt").write_text("\n".join(srt), encoding="utf-8")
 
     print(f"total {end:.1f}s, {len(shots)} shots, {sum(len(s['cues']) for s in shots)} highlights, {len(subs)} subtitles")
